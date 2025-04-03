@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "139829389575",
+    "project_id": "qubiko-ai",
+    "storage_bucket": "qubiko-ai.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:139829389575:android:3bd2ea1a956d8d40e83da2",
+        "android_client_info": {
+          "package_name": "com.example.qubiko_ai"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCdxmfHe-f806hUb2jy0FWHINVdIqdSaWE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
