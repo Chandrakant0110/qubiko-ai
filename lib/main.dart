@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'screens/splash_screen.dart';
-import 'constants/app_colors.dart';
+import 'screens/walkthrough_screen.dart';
+import 'constants/app_theme.dart';
 
 void main() {
   runApp(const MyApp());
@@ -15,16 +15,13 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Qubiko AI',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme:
-            ColorScheme.fromSeed(seedColor: AppColors.primaryLightBlue),
-        useMaterial3: true,
-        textTheme: GoogleFonts.urbanistTextTheme(
-          Theme.of(context).textTheme,
-        ),
-      ),
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.system, // Follows system theme
       home: SplashScreen(
-        nextScreen: const HomeScreen(),
+        nextScreen: const WalkthroughScreen(
+          nextScreen: HomeScreen(),
+        ),
       ),
     );
   }
