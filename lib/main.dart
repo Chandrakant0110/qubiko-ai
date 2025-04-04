@@ -1,9 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'screens/splash_screen.dart';
 import 'screens/walkthrough_screen.dart';
 import 'constants/app_theme.dart';
+import 'services/analytics/analytics.dart';
+import 'services/analytics/analytics_route_observer.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  // Initialize Analytics
+  await analytics.initialize();
+
   runApp(const MyApp());
 }
 
@@ -18,6 +32,10 @@ class MyApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system, // Follows system theme
+      navigatorObservers: [
+        // Track screen views automatically using our custom observer
+        AnalyticsRouteObserver(),
+      ],
       home: SplashScreen(
         nextScreen: const WalkthroughScreen(
           nextScreen: HomeScreen(),
@@ -39,6 +57,12 @@ class _HomeScreenState extends State<HomeScreen> {
   int _counter = 0;
 
   void _incrementCounter() {
+    // Log the increment event with analytics
+    analytics.logEvent(
+      name: 'increment_counter',
+      parameters: {'count': _counter + 1},
+    );
+
     setState(() {
       _counter++;
     });
