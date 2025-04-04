@@ -3,6 +3,7 @@ import '../constants/app_colors.dart';
 import '../constants/app_assets.dart';
 import '../widgets/custom_page_indicator.dart';
 import '../widgets/custom_buttons.dart';
+import '../services/performance/performance.dart';
 
 class OnboardingContent {
   final String title;
@@ -54,6 +55,13 @@ class _WalkthroughScreenState extends State<WalkthroughScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    performance.trackNavigation('WalkthroughScreen');
+    performance.startTiming('OnboardingViewDuration');
+  }
+
+  @override
   void dispose() {
     _pageController.dispose();
     super.dispose();
@@ -61,19 +69,46 @@ class _WalkthroughScreenState extends State<WalkthroughScreen> {
 
   void _onNextPage() {
     if (_currentPage < _contents.length - 1) {
+      performance.trackButtonClick(
+        'next_button',
+        screenName: 'WalkthroughScreen',
+        additionalParams: {'current_page': _currentPage, 'action': 'next'},
+      );
+
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
     } else {
+      performance.trackButtonClick(
+        'get_started_button',
+        screenName: 'WalkthroughScreen',
+        additionalParams: {'action': 'complete_onboarding'},
+      );
+
       _onSkip();
     }
   }
 
   void _onSkip() {
+    performance.trackButtonClick(
+      'skip_button',
+      screenName: 'WalkthroughScreen',
+      additionalParams: {'current_page': _currentPage, 'action': 'skip'},
+    );
+
+    performance.endTimingAndLog(
+      'OnboardingViewDuration',
+      eventName: 'onboarding_complete',
+      additionalParams: {'completed_page': _currentPage},
+    );
+
     if (widget.nextScreen != null) {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => widget.nextScreen!),
+        MaterialPageRoute(
+          builder: (context) => widget.nextScreen!,
+          settings: const RouteSettings(name: 'HomeScreen'),
+        ),
       );
     }
   }
@@ -90,6 +125,11 @@ class _WalkthroughScreenState extends State<WalkthroughScreen> {
               child: PageView.builder(
                 controller: _pageController,
                 onPageChanged: (index) {
+                  performance.trackNavigation(
+                    'OnboardingPage${index + 1}',
+                    previousScreen: 'OnboardingPage${_currentPage + 1}',
+                  );
+
                   setState(() {
                     _currentPage = index;
                   });
@@ -158,6 +198,13 @@ class _WalkthroughScreenState extends State<WalkthroughScreen> {
                     _contents[index].imagePath,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
+                      // Track image load failures
+                      performance.trackButtonClick(
+                        'image_error',
+                        screenName: 'WalkthroughScreen',
+                        additionalParams: {'image_index': index},
+                      );
+
                       // Placeholder in case the image doesn't exist yet
                       return Container(
                         color: Colors.grey[200],
