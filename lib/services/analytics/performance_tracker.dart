@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'analytics.dart';
+import '../crashlytics/crashlytics.dart';
 
 /// Service to track app performance metrics
 class PerformanceTracker {
@@ -168,6 +169,12 @@ class PerformanceTracker {
       name: 'app_error',
       parameters: params,
     );
+
+    // Record error to Crashlytics
+    crashlytics.log('ERROR: $message');
+    final errorToRecord = error ?? message;
+    final stackToRecord = stackTrace ?? StackTrace.current;
+    crashlytics.recordError(errorToRecord, stackToRecord, fatal: false);
   }
 
   /// Log a custom event with a specific color

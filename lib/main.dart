@@ -6,6 +6,7 @@ import 'screens/walkthrough_screen.dart';
 import 'constants/app_theme.dart';
 import 'services/analytics/analytics.dart';
 import 'services/performance/performance.dart';
+import 'services/crashlytics/crashlytics.dart';
 
 Future<void> main() async {
   // Start performance tracking
@@ -24,6 +25,11 @@ Future<void> main() async {
   // Initialize Analytics
   await analytics.initialize();
   performance.endTimingAndLog('Analytics Initialization');
+
+  // Initialize Firebase Crashlytics
+  performance.startTiming('Crashlytics Initialization');
+  await crashlytics.initialize();
+  performance.endTimingAndLog('Crashlytics Initialization');
 
   // Mark app as initialized
   performance.markAppInitialized();
@@ -248,6 +254,20 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: const Text('Red Log'),
                 ),
               ],
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                // This will cause a crash that Crashlytics will report
+                crashlytics.log('About to crash the app intentionally');
+                // Force a crash
+                throw Exception('This is a test crash!');
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Test Crash'),
             ),
           ],
         ),
