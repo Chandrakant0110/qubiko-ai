@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import '../constants/app_colors.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../services/performance/performance.dart';
 
 class SplashScreen extends StatefulWidget {
   final Widget? nextScreen;
@@ -19,11 +20,22 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
+    performance.trackNavigation('SplashScreen');
+    performance.startTiming('SplashScreenDuration');
+
     // Navigate to the next screen after a delay
     if (widget.nextScreen != null) {
       Timer(const Duration(seconds: 3), () {
+        performance.endTimingAndLog(
+          'SplashScreenDuration',
+          eventName: 'splash_screen_complete',
+        );
+
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => widget.nextScreen!),
+          MaterialPageRoute(
+            builder: (context) => widget.nextScreen!,
+            settings: const RouteSettings(name: 'WalkthroughScreen'),
+          ),
         );
       });
     }

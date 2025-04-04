@@ -2,6 +2,8 @@
 export 'analytics_service.dart';
 export 'analytics_manager.dart';
 export 'firebase_analytics_service.dart';
+export 'analytics_route_observer.dart';
+export 'performance_tracker.dart'; // Export the class, but not its instance
 
 // Export a singleton instance for easy access
 import 'analytics_manager.dart';
