@@ -8,6 +8,9 @@ import 'services/analytics/analytics.dart';
 import 'services/performance/performance.dart';
 import 'services/crashlytics/crashlytics.dart';
 
+// Theme mode notifier to manage app-wide theme changes
+final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.system);
+
 Future<void> main() async {
   // Start performance tracking
   performance.startAppInitialization();
@@ -42,21 +45,26 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Qubiko AI',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system, // Follows system theme
-      navigatorObservers: [
-        // Track screen views automatically using our custom observer
-        AnalyticsRouteObserver(),
-      ],
-      home: SplashScreen(
-        nextScreen: const WalkthroughScreen(
-          nextScreen: HomeScreen(),
-        ),
-      ),
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: themeNotifier,
+      builder: (_, ThemeMode currentMode, __) {
+        return MaterialApp(
+          title: 'Qubiko AI',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: currentMode,
+          navigatorObservers: [
+            // Track screen views automatically using our custom observer
+            AnalyticsRouteObserver(),
+          ],
+          home: SplashScreen(
+            nextScreen: const WalkthroughScreen(
+              nextScreen: HomeScreen(),
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -144,6 +152,39 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // Toggle the theme mode
+  void _toggleTheme() {
+    final currentTheme = themeNotifier.value;
+
+    // Track theme change with performance tracker
+    performance.trackButtonClick(
+      'theme_toggle',
+      screenName: 'HomeScreen',
+      additionalParams: {
+        'previous_theme': currentTheme.toString(),
+        'new_theme': currentTheme == ThemeMode.light
+            ? ThemeMode.dark.toString()
+            : ThemeMode.light.toString(),
+      },
+    );
+
+    // Switch between light and dark theme
+    if (currentTheme == ThemeMode.dark) {
+      themeNotifier.value = ThemeMode.light;
+    } else {
+      themeNotifier.value = ThemeMode.dark;
+    }
+
+    // Show a snackbar to confirm theme change
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+            'Theme changed to ${themeNotifier.value == ThemeMode.dark ? 'dark' : 'light'} mode'),
+        duration: const Duration(seconds: 1),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -151,6 +192,20 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: const Text('Qubiko AI'),
         actions: [
+          // Theme switcher button
+          IconButton(
+            icon: ValueListenableBuilder<ThemeMode>(
+                valueListenable: themeNotifier,
+                builder: (_, ThemeMode currentMode, __) {
+                  return Icon(
+                    currentMode == ThemeMode.dark
+                        ? Icons.light_mode
+                        : Icons.dark_mode,
+                  );
+                }),
+            onPressed: _toggleTheme,
+            tooltip: 'Toggle theme',
+          ),
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () {

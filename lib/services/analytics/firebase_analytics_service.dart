@@ -26,7 +26,17 @@ class FirebaseAnalyticsService implements AnalyticsService {
         analyticsParams = {};
         parameters.forEach((key, value) {
           if (value != null) {
-            analyticsParams![key] = value.toString();
+            // Firebase Analytics only accepts String or num values
+            if (value is bool) {
+              // Convert boolean to int (1 or 0)
+              analyticsParams![key] = value ? 1 : 0;
+            } else if (value is String || value is num) {
+              // String and number types are allowed
+              analyticsParams![key] = value;
+            } else {
+              // Convert other types to string
+              analyticsParams![key] = value.toString();
+            }
           }
         });
       }
