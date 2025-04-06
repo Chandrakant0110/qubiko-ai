@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'screens/splash_screen.dart';
 import 'screens/walkthrough_screen.dart';
+import 'screens/auth_screen.dart';
 import 'constants/app_theme.dart';
 import 'services/analytics/analytics.dart';
 import 'services/performance/performance.dart';
@@ -60,7 +61,7 @@ class MyApp extends StatelessWidget {
           ],
           home: SplashScreen(
             nextScreen: const WalkthroughScreen(
-              nextScreen: HomeScreen(),
+              nextScreen: AuthScreen(),
             ),
           ),
         );

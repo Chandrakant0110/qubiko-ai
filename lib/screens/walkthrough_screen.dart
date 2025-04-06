@@ -4,6 +4,7 @@ import '../constants/app_assets.dart';
 import '../widgets/custom_page_indicator.dart';
 import '../widgets/custom_buttons.dart';
 import '../services/performance/performance.dart';
+import 'auth_screen.dart';
 
 class OnboardingContent {
   final String title;
@@ -103,14 +104,12 @@ class _WalkthroughScreenState extends State<WalkthroughScreen> {
       additionalParams: {'completed_page': _currentPage},
     );
 
-    if (widget.nextScreen != null) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (context) => widget.nextScreen!,
-          settings: const RouteSettings(name: 'HomeScreen'),
-        ),
-      );
-    }
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => const AuthScreen(),
+        settings: const RouteSettings(name: 'AuthScreen'),
+      ),
+    );
   }
 
   @override

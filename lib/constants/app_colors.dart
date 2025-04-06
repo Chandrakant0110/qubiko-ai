@@ -17,6 +17,18 @@ class AppColors {
   static const Color backgroundGrey = Color(0xFFF5F5F5);
   static const Color backgroundDarkGrey = Color(0xFF1E1E1E);
 
+  // Auth screen gradient colors
+  static const Color authGradientStart = Color(0xFF8FBFFF);
+  static const Color authGradientEnd = Color(0xFFFFDAF4);
+
+  // Social login button colors
+  static const Color facebookBlue = Color(0xFF2AA4F4);
+  static const Color facebookDarkBlue = Color(0xFF007AD9);
+  static const Color googleRed = Color(0xFFEB4335);
+  static const Color googleBlue = Color(0xFF4285F4);
+  static const Color googleGreen = Color(0xFF34A853);
+  static const Color googleYellow = Color(0xFFFBBC05);
+
   // Common UI element colors
   static const Color dividerLight = Color(0xFFE0E0E0);
   static const Color dividerDark = Color(0xFF424242);
@@ -36,6 +48,25 @@ class AppColors {
       primaryDarkBlue,
     ],
   );
+
+  // Auth screen background gradient
+  static const LinearGradient authBackgroundGradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [
+      authGradientStart,
+      authGradientEnd,
+    ],
+  );
+
+  // Button shadows
+  static const List<BoxShadow> primaryButtonShadow = [
+    BoxShadow(
+      color: Color(0x197483F4),
+      blurRadius: 24,
+      offset: Offset(4, 8),
+    ),
+  ];
 
   // Light theme color scheme
   static ColorScheme get lightColorScheme => const ColorScheme(
