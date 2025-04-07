@@ -39,6 +39,9 @@ dependencies:
   google_fonts: ^6.2.1  # For loading the Urbanist font
   firebase_analytics: ^11.4.5
   firebase_crashlytics: ^4.3.5
+  firebase_auth: ^5.5.2
+  google_sign_in: ^6.3.0
+  flutter_riverpod: ^2.6.1
 
 dev_dependencies:
   flutter_test:

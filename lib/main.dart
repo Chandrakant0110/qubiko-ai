@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'firebase_options.dart';
 import 'screens/splash_screen.dart';
 import 'screens/walkthrough_screen.dart';
@@ -38,7 +39,7 @@ Future<void> main() async {
   // Mark app as initialized
   performance.markAppInitialized();
 
-  runApp(const MyApp());
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends StatelessWidget {
@@ -59,11 +60,15 @@ class MyApp extends StatelessWidget {
             // Track screen views automatically using our custom observer
             AnalyticsRouteObserver(),
           ],
-          home: SplashScreen(
-            nextScreen: const WalkthroughScreen(
-              nextScreen: AuthScreen(),
-            ),
-          ),
+          routes: {
+            '/': (context) => SplashScreen(
+                  nextScreen: const WalkthroughScreen(
+                    nextScreen: AuthScreen(),
+                  ),
+                ),
+            '/auth': (context) => const AuthScreen(),
+            '/home': (context) => const HomeScreen(),
+          },
         );
       },
     );
