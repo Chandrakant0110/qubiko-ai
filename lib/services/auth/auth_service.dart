@@ -52,14 +52,20 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
 
+  // Stream of authentication state changes
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
-  // Get current user
+  // Get the authentication state once immediately
+  Future<User?> get currentUser async => _auth.currentUser;
+
+  // Get current user synchronously
   UserModel? getCurrentUser() {
     final user = _auth.currentUser;
     if (user != null) {
+      debugPrint('Current user found: ${user.uid}, email: ${user.email}');
       return UserModel.fromFirebase(user);
     }
+    debugPrint('No current user found');
     return null;
   }
 

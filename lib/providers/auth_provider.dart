@@ -9,15 +9,43 @@ final authServiceProvider = Provider<AuthService>((ref) {
   return AuthService();
 });
 
+// Provide the initial authentication state - important for the splash screen
+final initialAuthStateProvider = FutureProvider<AuthResult>((ref) async {
+  final authService = ref.watch(authServiceProvider);
+
+  // Get current user synchronously first
+  final currentUser = authService.getCurrentUser();
+  if (currentUser != null) {
+    return AuthResult.authenticated(currentUser);
+  }
+
+  // If no current user, wait a moment for Firebase to fully initialize
+  // and check persistence storage
+  return await Future.delayed(const Duration(milliseconds: 500), () {
+    final user = authService.getCurrentUser();
+    if (user != null) {
+      return AuthResult.authenticated(user);
+    }
+    return AuthResult.unauthenticated();
+  });
+});
+
 // Auth state notifier
 class AuthNotifier extends StateNotifier<AuthResult> {
   final AuthService _authService;
-  
+
   AuthNotifier(this._authService) : super(AuthResult.loading()) {
     _initAuth();
   }
 
   void _initAuth() {
+    // First check if user is already logged in
+    final currentUser = _authService.getCurrentUser();
+    if (currentUser != null) {
+      state = AuthResult.authenticated(currentUser);
+    }
+
+    // Then listen to auth state changes
     _authService.authStateChanges.listen((User? user) {
       if (user == null) {
         state = AuthResult.unauthenticated();
@@ -63,6 +91,7 @@ class AuthNotifier extends StateNotifier<AuthResult> {
   // Sign out
   Future<void> signOut() async {
     try {
+      state = AuthResult.loading();
       await _authService.signOut();
       state = AuthResult.unauthenticated();
     } catch (e) {
@@ -91,4 +120,4 @@ class AuthNotifier extends StateNotifier<AuthResult> {
 final authProvider = StateNotifierProvider<AuthNotifier, AuthResult>((ref) {
   final authService = ref.watch(authServiceProvider);
   return AuthNotifier(authService);
-}); 
+});

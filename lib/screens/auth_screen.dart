@@ -20,6 +20,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLogin = true;
+  bool _isPasswordVisible = false;
 
   @override
   void initState() {
@@ -58,7 +59,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     }
 
     await ref.read(authProvider.notifier).signInWithEmailAndPassword(
-        _emailController.text.trim(), _passwordController.text.trim());
+          _emailController.text.trim(),
+          _passwordController.text.trim(),
+        );
   }
 
   void _onSignUpPressed() async {
@@ -74,7 +77,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     }
 
     await ref.read(authProvider.notifier).signUpWithEmailAndPassword(
-        _emailController.text.trim(), _passwordController.text.trim());
+          _emailController.text.trim(),
+          _passwordController.text.trim(),
+        );
   }
 
   void _onGooglePressed() async {
@@ -283,8 +288,20 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
           borderSide: BorderSide.none,
         ),
         prefixIcon: const Icon(Icons.lock_outline),
+        suffixIcon: IconButton(
+          icon: Icon(
+            _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
+            color: Colors.grey,
+          ),
+          onPressed: () {
+            setState(() {
+              _isPasswordVisible = !_isPasswordVisible;
+            });
+          },
+        ),
       ),
-      obscureText: true,
+      obscureText: !_isPasswordVisible,
+      obscuringCharacter: '●', // Larger dot for password
     );
   }
 
