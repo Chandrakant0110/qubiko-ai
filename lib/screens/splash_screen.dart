@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../constants/app_colors.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/performance/performance.dart';
@@ -28,8 +29,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
     // Make sure splash screen shows for a minimum duration
     _splashTimer = Timer(const Duration(seconds: 2), () {
-      setState(() {
-      });
+      setState(() {});
       _checkAuthAndNavigate();
     });
   }
@@ -124,43 +124,62 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // Logo with shadow and gradient
-              Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white,
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color.fromRGBO(19, 26, 45, 0.1),
-                      blurRadius: 12,
-                      offset: Offset(13, 12),
-                    ),
-                  ],
-                ),
-                child: Center(
-                  child: Text(
-                    'Q',
-                    style: TextStyle(
-                      fontFamily: GoogleFonts.urbanist().fontFamily,
-                      fontSize: 60,
-                      fontWeight: FontWeight.bold,
-                      foreground: Paint()
-                        ..shader = AppColors.primaryGradient.createShader(
-                          const Rect.fromLTWH(0.0, 0.0, 60, 60),
+
+              Stack(
+                alignment: Alignment.center, // Center align children
+                children: [
+                  SvgPicture.asset(
+                    'assets/images/main_logo_bg.svg',
+                    width: 185,
+                    height: 185,
+                  ),
+                  Container(
+                    width: 92,
+                    height: 92,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white,
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color.fromRGBO(19, 26, 45, 0.1),
+                          blurRadius: 12,
+                          offset: Offset(13, 12),
                         ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Text(
+                        'Q',
+                        style: TextStyle(
+                          fontFamily: GoogleFonts.urbanist().fontFamily,
+                          fontSize: 44,
+                          fontWeight: FontWeight.w700,
+                          foreground: Paint()
+                            ..shader = AppColors.primaryGradient.createShader(
+                              const Rect.fromLTWH(0.0, 0.0, 60, 60),
+                            ),
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                ],
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
               // App name
               Text(
                 'Qubiko AI',
                 style: GoogleFonts.urbanist(
-                  fontSize: 40,
+                  fontSize: 42,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textDark,
+                ),
+              ),
+
+              Text(
+                "Making AI simple in seconds! :)",
+                style: GoogleFonts.urbanist(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400,
                 ),
               ),
 
