@@ -25,6 +25,13 @@ class AppAssets {
   static const String placeholderImage = '$_imagesPath/placeholder.png';
   static const String defaultAvatar = '$_imagesPath/default_avatar.png';
 
+  // Auth screen assets
+  static const String iconsPath = '$_imagesPath/icons';
+  static const String handWave = '$iconsPath/hand_wave.png';
+  static const String googleIcon = '$iconsPath/google_icon.png';
+  static const String appleIcon = '$iconsPath/apple_icon.png';
+  static const String facebookIcon = '$iconsPath/facebook_icon.png';
+
   // Backgrounds and decorative elements
   static const String backgroundPattern = '$_imagesPath/background_pattern.png';
 
