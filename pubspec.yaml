@@ -44,11 +44,16 @@ dependencies:
   flutter_riverpod: ^2.6.1
   flutter_svg: ^2.0.17
   shared_preferences: ^2.2.2
-  http: ^1.2.1
   url_launcher: ^6.2.6
+  http: ^1.4.0
+  video_player: ^2.10.0
+  saver_gallery: ^4.0.1
+  path_provider: ^2.1.5
+  flutter_local_notifications: ^19.4.0
+  fluttertoast: ^8.2.12
 
 dev_dependencies:
-  flutter_test:
+  flutter_test: 
     sdk: flutter
 
   # The "flutter_lints" package below contains a set of recommended lints to

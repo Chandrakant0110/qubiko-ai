@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -10,9 +11,15 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/gestures.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:video_player/video_player.dart';
+import 'package:saver_gallery/saver_gallery.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+  const HomeScreen({super.key});
 
   @override
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
@@ -26,11 +33,118 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _loading = false;
   bool _loadingPosts = false;
   String? _error;
+  VideoPlayerController? _videoController;
+  bool _showVideoPopup = false;
+  String? _popupVideoUrl;
+  bool _downloading = false;
+  final FlutterLocalNotificationsPlugin _notifications = FlutterLocalNotificationsPlugin();
 
   @override
   void initState() {
     super.initState();
     _loadToken();
+    _initializeNotifications();
+    _requestNotificationPermissions();
+  }
+
+  Future<void> _requestNotificationPermissions() async {
+    final androidSettings = AndroidFlutterLocalNotificationsPlugin();
+    await androidSettings.requestNotificationsPermission();
+  }
+
+  Future<void> _initializeNotifications() async {
+    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const iosSettings = DarwinInitializationSettings(
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+    );
+    const initSettings = InitializationSettings(android: androidSettings, iOS: iosSettings);
+    await _notifications.initialize(initSettings);
+  }
+
+  Future<void> _showDownloadNotification(String title, String body) async {
+    const androidDetails = AndroidNotificationDetails(
+      'download_channel',
+      'Downloads',
+      channelDescription: 'Download notifications',
+      importance: Importance.high,
+      priority: Priority.high,
+      showWhen: true,
+    );
+    const notificationDetails = NotificationDetails(android: androidDetails);
+    await _notifications.show(
+      DateTime.now().millisecondsSinceEpoch.remainder(100000),
+      title,
+      body,
+      notificationDetails,
+    );
+  }
+
+  void _showToast(String message) {
+    Fluttertoast.showToast(
+      msg: message,
+      toastLength: Toast.LENGTH_LONG,
+      gravity: ToastGravity.BOTTOM,
+      backgroundColor: Colors.black87,
+      textColor: Colors.white,
+    );
+  }
+
+  Future<void> _showDownloadDialog(String videoUrl) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Download Video'),
+        content: const Text('Do you want to download this video to your gallery?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Download'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true) {
+      _downloadVideoWithNotification(videoUrl);
+    }
+  }
+
+  Future<void> _downloadVideoWithNotification(String url) async {
+    HapticFeedback.mediumImpact();
+    _showToast('Download started...');
+    await _showDownloadNotification('Download Started', 'Video download in progress...');
+    
+    try {
+      final tempDir = await getTemporaryDirectory();
+      final fileName = 'instagram_video_${DateTime.now().millisecondsSinceEpoch}.mp4';
+      final filePath = '${tempDir.path}/$fileName';
+      final response = await http.get(Uri.parse(url));
+      final file = await File(filePath).writeAsBytes(response.bodyBytes);
+      final result = await SaverGallery.saveFile(
+        filePath: file.path,
+        fileName: fileName,
+        skipIfExists: false,
+      );
+      
+      if (result.isSuccess) {
+        _showToast('Video downloaded successfully!');
+        await _showDownloadNotification('Download Complete', 'Video saved to gallery!');
+      } else {
+        _showToast('Failed to save video to gallery.');
+        await _showDownloadNotification('Download Failed', 'Failed to save video to gallery.');
+      }
+    } catch (e) {
+      _showToast('Error occurred while downloading video.');
+      await _showDownloadNotification('Download Failed', 'Error occurred while downloading video.');
+    } finally{
+      HapticFeedback.heavyImpact();
+    }
   }
 
   Future<void> _loadToken() async {
@@ -125,6 +239,54 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
   }
 
+  Future<void> _showVideoPlayerPopup(String videoUrl) async {
+    setState(() {
+      _showVideoPopup = true;
+      _popupVideoUrl = videoUrl;
+    });
+    _videoController?.dispose();
+    _videoController = VideoPlayerController.networkUrl(Uri.parse(videoUrl));
+    await _videoController!.initialize();
+    _videoController!.play();
+    setState(() {});
+  }
+
+  void _hideVideoPlayerPopup() {
+    _videoController?.pause();
+    setState(() {
+      _showVideoPopup = false;
+      _popupVideoUrl = null;
+    });
+  }
+
+  Future<void> _downloadVideo(String url) async {
+    setState(() => _downloading = true);
+    _showToast('Download started...');
+    
+    try {
+      final tempDir = await getTemporaryDirectory();
+      final fileName = 'instagram_video_${DateTime.now().millisecondsSinceEpoch}.mp4';
+      final filePath = '${tempDir.path}/$fileName';
+      final response = await http.get(Uri.parse(url));
+      final file = await File(filePath).writeAsBytes(response.bodyBytes);
+      final result = await SaverGallery.saveFile(
+        filePath: file.path,
+        fileName: fileName,
+        skipIfExists: false,
+      );
+      
+      if (result.isSuccess) {
+        _showToast('Video downloaded successfully!');
+      } else {
+        _showToast('Failed to save video to gallery.');
+      }
+    } catch (e) {
+      _showToast('Error occurred while downloading video.');
+    } finally {
+      setState(() => _downloading = false);
+    }
+  }
+
   void _showTokenManagementDialog() {
     showDialog(
       context: context,
@@ -134,7 +296,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           title: const Text('Token Management'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
-            children: [
+          children: [
               TextField(
                 controller: controller,
                 decoration: const InputDecoration(hintText: 'Enter token'),
@@ -160,9 +322,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       child: const Text('Delete'),
                     ),
                 ],
-              ),
-            ],
-          ),
+                ),
+              ],
+            ),
         );
       },
     );
@@ -334,8 +496,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         final post = _posts[index];
         final isVideo = post["media_type"] == "VIDEO";
         final thumb = post["thumbnail_url"] ?? post["media_url"];
+        final mediaUrl = post["media_url"];
         return GestureDetector(
           onTap: () => launchUrl(Uri.parse(post["permalink"])),
+          onDoubleTap: isVideo && mediaUrl != null
+              ? () => _showDownloadDialog(mediaUrl)
+              : null,
+          onLongPressStart: isVideo && mediaUrl != null
+              ? (_) => _showVideoPlayerPopup(mediaUrl)
+              : null,
+          onLongPressEnd: isVideo && mediaUrl != null
+              ? (_) => _hideVideoPlayerPopup()
+              : null,
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -426,12 +598,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(authProvider).user;
+    
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         title: Row(
           children: [
+            // Logo in AppBar
             Stack(
               alignment: Alignment.center,
               children: [
@@ -465,6 +639,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ],
         ),
         actions: [
+          // Theme switcher button
           IconButton(
             icon: ValueListenableBuilder<ThemeMode>(
                 valueListenable: themeNotifier,
@@ -483,6 +658,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             },
             tooltip: 'Toggle theme',
           ),
+          // User profile/menu
           IconButton(
             icon: user?.photoURL != null
                 ? CircleAvatar(
@@ -496,7 +672,48 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ],
       ),
-      body: _buildBody(),
+      body: Stack(
+        children: [
+          _buildBody(),
+          if (_showVideoPopup && _popupVideoUrl != null)
+            GestureDetector(
+              onTap: _hideVideoPlayerPopup,
+              child: Container(
+                color: Colors.black54,
+                alignment: Alignment.center,
+                child: SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.85,
+                  height: MediaQuery.of(context).size.height * 0.75,
+                  child: Material(
+                    borderRadius: BorderRadius.circular(16),
+                    clipBehavior: Clip.antiAlias,
+                    child: Stack(
+                      children: [
+                        if (_videoController != null && _videoController!.value.isInitialized)
+                          AspectRatio(
+                            aspectRatio: _videoController!.value.aspectRatio,
+                            child: VideoPlayer(_videoController!),
+                          )
+                        else
+                          const Center(child: CircularProgressIndicator()),
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: IconButton(
+                            icon: const Icon(Icons.download, color: Colors.white),
+                            onPressed: _downloading ? null : () => _downloadVideo(_popupVideoUrl!),
+                          ),
+                        ),
+                        if (_downloading)
+                          const Center(child: CircularProgressIndicator()),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 } 
