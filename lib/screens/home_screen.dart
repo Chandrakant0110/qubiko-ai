@@ -8,6 +8,8 @@ import '../main.dart' show themeNotifier;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter/gestures.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -20,7 +22,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   final TextEditingController _tokenController = TextEditingController();
   String? _token;
   Map<String, dynamic>? _profileData;
+  List<Map<String, dynamic>> _posts = [];
   bool _loading = false;
+  bool _loadingPosts = false;
   String? _error;
 
   @override
@@ -57,6 +61,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     setState(() {
       _token = null;
       _profileData = null;
+      _posts = [];
       _error = null;
       _tokenController.clear();
     });
@@ -92,38 +97,72 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
   }
 
-  void _showTokenDialog({bool isEdit = false}) {
+  Future<void> _fetchPosts() async {
+    if (_token == null || _token!.isEmpty) return;
+    setState(() {
+      _loadingPosts = true;
+    });
+    final url = Uri.parse(
+      'https://graph.instagram.com/v23.0/me/media?fields=id,caption,media_type,media_url,permalink,thumbnail_url,timestamp&access_token=$_token',
+    );
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          _posts = List<Map<String, dynamic>>.from(data['data'] ?? []);
+          _loadingPosts = false;
+        });
+      } else {
+        setState(() {
+          _loadingPosts = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _loadingPosts = false;
+      });
+    }
+  }
+
+  void _showTokenManagementDialog() {
     showDialog(
       context: context,
       builder: (ctx) {
-        final controller = TextEditingController(text: isEdit ? _token : '');
+        final controller = TextEditingController(text: _token);
         return AlertDialog(
-          title: Text(isEdit ? 'Edit Instagram Token' : 'Add Instagram Token'),
-          content: TextField(
-            controller: controller,
-            decoration: const InputDecoration(hintText: 'Enter token'),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(ctx).pop();
-                _saveToken(controller.text.trim());
-              },
-              child: const Text('Save'),
-            ),
-            if (isEdit && _token != null)
-              TextButton(
-                onPressed: () {
-                  Navigator.of(ctx).pop();
-                  _deleteToken();
-                },
-                child: const Text('Delete'),
+          title: const Text('Token Management'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: controller,
+                decoration: const InputDecoration(hintText: 'Enter token'),
               ),
-          ],
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(ctx).pop();
+                      _saveToken(controller.text.trim());
+                    },
+                    child: const Text('Save'),
+                  ),
+                  if (_token != null)
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(ctx).pop();
+                        _deleteToken();
+                      },
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                      child: const Text('Delete'),
+                    ),
+                ],
+              ),
+            ],
+          ),
         );
       },
     );
@@ -172,30 +211,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               const Divider(),
               ListTile(
                 leading: const Icon(Icons.vpn_key),
-                title: const Text('Add Token'),
+                title: const Text('Token Management'),
                 onTap: () {
                   Navigator.pop(context);
-                  _showTokenDialog(isEdit: false);
+                  _showTokenManagementDialog();
                 },
               ),
-              if (_token != null)
-                ListTile(
-                  leading: const Icon(Icons.edit),
-                  title: const Text('Edit Token'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _showTokenDialog(isEdit: true);
-                  },
-                ),
-              if (_token != null)
-                ListTile(
-                  leading: const Icon(Icons.delete),
-                  title: const Text('Delete Token'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _deleteToken();
-                  },
-                ),
               ListTile(
                 leading: const Icon(Icons.logout, color: Colors.red),
                 title: Text(
@@ -211,6 +232,122 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   );
                 },
               ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildProfileRow() {
+    final profile = _profileData!;
+    return Row(
+      children: [
+        CircleAvatar(
+          radius: 40,
+          backgroundImage: profile["profile_picture_url"] != null
+              ? NetworkImage(profile["profile_picture_url"])
+              : null,
+          child: profile["profile_picture_url"] == null
+              ? const Icon(Icons.person, size: 40)
+              : null,
+        ),
+        const SizedBox(width: 24),
+        Expanded(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildStatColumn('Posts', profile["media_count"]?.toString() ?? '0'),
+              _buildStatColumn('Followers', profile["followers_count"]?.toString() ?? '0'),
+              _buildStatColumn('Following', profile["follows_count"]?.toString() ?? '0'),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatColumn(String label, String value) {
+    return Column(
+      children: [
+        Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        const SizedBox(height: 4),
+        Text(label, style: const TextStyle(color: Colors.grey)),
+      ],
+    );
+  }
+
+  Widget _buildBio(String bio) {
+    final regex = RegExp(r'@([A-Za-z0-9_\.]+)');
+    final spans = <TextSpan>[];
+    int start = 0;
+    for (final match in regex.allMatches(bio)) {
+      if (match.start > start) {
+        spans.add(TextSpan(text: bio.substring(start, match.start)));
+      }
+      final mention = match.group(1)!;
+      spans.add(
+        TextSpan(
+          text: '@$mention',
+          style: const TextStyle(color: Colors.blue),
+          recognizer: TapGestureRecognizer()
+            ..onTap = () => launchUrl(Uri.parse('https://www.instagram.com/$mention')),
+        ),
+      );
+      start = match.end;
+    }
+    if (start < bio.length) {
+      spans.add(TextSpan(text: bio.substring(start)));
+    }
+    return RichText(text: TextSpan(style: const TextStyle(color: Colors.black), children: spans));
+  }
+
+  Widget _buildWebsite(String? website) {
+    if (website == null || website.isEmpty) return const SizedBox.shrink();
+    return GestureDetector(
+      onTap: () => launchUrl(Uri.parse(website)),
+      child: Text(
+        website,
+        style: const TextStyle(color: Colors.blue, decoration: TextDecoration.underline),
+      ),
+    );
+  }
+
+  Widget _buildPostsGrid() {
+    if (_loadingPosts) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_posts.isEmpty) {
+      return const Center(child: Text('No posts found.'));
+    }
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 4,
+        mainAxisSpacing: 4,
+        childAspectRatio: 3/4,
+      ),
+      itemCount: _posts.length,
+      itemBuilder: (context, index) {
+        final post = _posts[index];
+        final isVideo = post["media_type"] == "VIDEO";
+        final thumb = post["thumbnail_url"] ?? post["media_url"];
+        return GestureDetector(
+          onTap: () => launchUrl(Uri.parse(post["permalink"])),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Image.network(thumb, fit: BoxFit.cover),
+              if (isVideo)
+                const Align(
+                  alignment: Alignment.topRight,
+                  child: Padding(
+                    padding: EdgeInsets.all(4.0),
+                    child: Icon(Icons.videocam, color: Colors.white, size: 20),
+                  ),
+                ),
             ],
           ),
         );
@@ -261,33 +398,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (_profileData!["profile_picture_url"] != null)
-              Center(
-                child: CircleAvatar(
-                  backgroundImage: NetworkImage(_profileData!["profile_picture_url"]),
-                  radius: 48,
-                ),
-              ),
+            _buildProfileRow(),
             const SizedBox(height: 16),
-            Text('Name: '+(_profileData!["name"] ?? "") ),
-            Text('Username: '+(_profileData!["username"] ?? "") ),
-            Text('Account Type: '+(_profileData!["account_type"] ?? "") ),
-            Text('Media Count: '+(_profileData!["media_count"]?.toString() ?? "") ),
-            Text('Followers: '+(_profileData!["followers_count"]?.toString() ?? "") ),
-            Text('Follows: '+(_profileData!["follows_count"]?.toString() ?? "") ),
-            if (_profileData!["biography"] != null) ...[
-              const SizedBox(height: 8),
-              Text('Bio: '+_profileData!["biography"]),
-            ],
+            Text(_profileData!["account_type"] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            if (_profileData!["biography"] != null)
+              _buildBio(_profileData!["biography"]),
             if (_profileData!["website"] != null) ...[
               const SizedBox(height: 8),
-              Text('Website: '+_profileData!["website"]),
+              _buildWebsite(_profileData!["website"]),
             ],
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _fetchProfile,
-              child: const Text('Refresh'),
-            ),
+            const SizedBox(height: 16),
+            if(_posts.isEmpty)
+              ElevatedButton(
+                onPressed: _fetchPosts,
+                child: const Text('Fetch Posts'),
+              ),
+            const SizedBox(height: 16),
+            _buildPostsGrid(),
           ],
         ),
       );
