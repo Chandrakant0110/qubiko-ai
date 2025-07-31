@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'firebase_options.dart';
 import 'screens/splash_screen.dart';
 import 'screens/auth_screen.dart';
-import 'screens/home_screen.dart';
+import 'screens/main_navigation.dart';
 import 'constants/app_theme.dart';
 import 'services/analytics/analytics.dart';
 import 'services/performance/performance.dart';
@@ -63,7 +63,7 @@ class MyApp extends StatelessWidget {
           routes: {
             '/': (context) => const SplashScreen(),
             '/auth': (context) => const AuthScreen(),
-            '/home': (context) => const HomeScreen(),
+            '/home': (context) => const MainNavigation(),
           },
         );
       },

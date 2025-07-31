@@ -581,6 +581,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               _buildWebsite(_profileData!["website"]),
             ],
             const SizedBox(height: 16),
+            ElevatedButton.icon(onPressed: () {
+              Navigator.pushNamed(context, '/home');
+            }, label: const Text('Navigate to home'), icon: const Icon(Icons.refresh)),
             if(_posts.isEmpty)
               ElevatedButton(
                 onPressed: _fetchPosts,
