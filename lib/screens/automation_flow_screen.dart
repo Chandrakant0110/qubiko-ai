@@ -9,6 +9,9 @@ import '../models/automation.dart';
 import '../services/exceptions/app_exceptions.dart';
 import '../widgets/automation/automation_step_indicator.dart';
 import '../widgets/automation/post_selection_grid.dart';
+import '../widgets/automation/keyword_setup_widget.dart';
+import '../widgets/automation/enhanced_dm_message_widget.dart';
+import '../widgets/automation/opening_message_widget.dart';
 
 /// Screen for managing the automation creation/editing flow
 /// This handles the step-by-step process of building automations
@@ -176,10 +179,6 @@ class _AutomationFlowScreenState extends ConsumerState<AutomationFlowScreen> {
                     height: 1.4,
                   ),
                 ),
-                if (currentAutomation?.selectedPostId != null) ...[
-                  const SizedBox(height: UIConstants.paddingMedium),
-                  _buildPostSelectedIndicator(),
-                ],
               ],
             ),
           ),
@@ -208,35 +207,6 @@ class _AutomationFlowScreenState extends ConsumerState<AutomationFlowScreen> {
     );
   }
 
-  Widget _buildPostSelectedIndicator() {
-    return Container(
-      padding: const EdgeInsets.all(UIConstants.paddingMedium),
-      decoration: BoxDecoration(
-        color: AppColors.primaryLightBlue.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(UIConstants.borderRadiusSmall),
-        border: Border.all(
-          color: AppColors.primaryLightBlue.withOpacity(0.3),
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.check_circle,
-            color: AppColors.primaryLightBlue,
-            size: UIConstants.iconSizeMedium,
-          ),
-          const SizedBox(width: UIConstants.paddingSmall),
-          Text(
-            'Post selected',
-            style: GoogleFonts.urbanist(
-              color: AppColors.primaryLightBlue,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildErrorState(Object error, VoidCallback onRetry) {
     String errorMessage = 'An unexpected error occurred';
@@ -303,21 +273,15 @@ class _AutomationFlowScreenState extends ConsumerState<AutomationFlowScreen> {
   }
 
   Widget _buildSetTriggerStep() {
-    return const Center(
-      child: Text('Set Trigger Step - Coming Soon'),
-    );
+    return const KeywordSetupWidget();
   }
 
   Widget _buildChooseActionsStep() {
-    return const Center(
-      child: Text('Choose Actions Step - Coming Soon'),
-    );
+    return const EnhancedDMMessageWidget();
   }
 
   Widget _buildConfigureScheduleStep() {
-    return const Center(
-      child: Text('Configure Schedule Step - Coming Soon'),
-    );
+    return const OpeningMessageWidget();
   }
 
   Widget _buildSetConditionsStep() {

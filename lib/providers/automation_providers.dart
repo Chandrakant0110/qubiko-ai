@@ -189,6 +189,89 @@ class CurrentAutomationNotifier extends StateNotifier<Automation?> {
     }
   }
 
+  /// Updates keyword trigger settings
+  void updateKeywordSettings({bool? anyKeyword, List<String>? triggerKeywords}) {
+    if (state != null) {
+      state = state!.copyWith(
+        anyKeyword: anyKeyword,
+        triggerKeywords: triggerKeywords,
+      );
+      _saveDraft(); // Auto-save as draft
+    }
+  }
+
+  /// Adds a trigger keyword (max 3 allowed, case-sensitive, no exact duplicates)
+  void addTriggerKeyword(String keyword) {
+    if (state != null && state!.triggerKeywords.length < 3 && !state!.triggerKeywords.contains(keyword)) {
+      final newKeywords = List<String>.from(state!.triggerKeywords);
+      newKeywords.add(keyword);
+      state = state!.copyWith(triggerKeywords: newKeywords);
+      _saveDraft(); // Auto-save as draft
+    }
+  }
+
+  /// Removes a trigger keyword
+  void removeTriggerKeyword(String keyword) {
+    if (state != null) {
+      final newKeywords = List<String>.from(state!.triggerKeywords);
+      newKeywords.remove(keyword);
+      state = state!.copyWith(triggerKeywords: newKeywords);
+      _saveDraft(); // Auto-save as draft
+    }
+  }
+
+  /// Updates DM message data
+  void updateDMMessage({String? message, List<DMButton>? buttons}) {
+    if (state != null) {
+      state = state!.copyWith(
+        dmMessage: message,
+        dmButtons: buttons,
+      );
+      _saveDraft(); // Auto-save as draft
+    }
+  }
+
+  /// Adds a DM button (max 3 allowed)
+  void addDMButton(DMButton button) {
+    if (state != null && state!.dmButtons.length < 3) {
+      final newButtons = List<DMButton>.from(state!.dmButtons);
+      newButtons.add(button);
+      state = state!.copyWith(dmButtons: newButtons);
+      _saveDraft(); // Auto-save as draft
+    }
+  }
+
+  /// Updates a DM button at specific index
+  void updateDMButton(int index, DMButton button) {
+    if (state != null && index >= 0 && index < state!.dmButtons.length) {
+      final newButtons = List<DMButton>.from(state!.dmButtons);
+      newButtons[index] = button;
+      state = state!.copyWith(dmButtons: newButtons);
+      _saveDraft(); // Auto-save as draft
+    }
+  }
+
+  /// Removes a DM button
+  void removeDMButton(int index) {
+    if (state != null && index >= 0 && index < state!.dmButtons.length) {
+      final newButtons = List<DMButton>.from(state!.dmButtons);
+      newButtons.removeAt(index);
+      state = state!.copyWith(dmButtons: newButtons);
+      _saveDraft(); // Auto-save as draft
+    }
+  }
+
+  /// Updates opening message data
+  void updateOpeningMessage({String? message, String? buttonText}) {
+    if (state != null) {
+      state = state!.copyWith(
+        openingMessage: message,
+        openingButtonText: buttonText,
+      );
+      _saveDraft(); // Auto-save as draft
+    }
+  }
+
   /// Saves the current automation as a draft
   Future<void> _saveDraft() async {
     if (state != null) {

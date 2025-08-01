@@ -52,6 +52,18 @@ class Automation {
   final Map<String, dynamic> configuration;
   final int stepCount;
   final int currentStep;
+  
+  // Step 2: Keyword triggers
+  final bool anyKeyword;
+  final List<String> triggerKeywords;
+  
+  // Step 3: DM message
+  final String? dmMessage;
+  final List<DMButton> dmButtons;
+  
+  // Step 4: Opening message
+  final String? openingMessage;
+  final String? openingButtonText;
 
   const Automation({
     required this.id,
@@ -64,6 +76,12 @@ class Automation {
     this.configuration = const {},
     this.stepCount = 6,
     this.currentStep = 0,
+    this.anyKeyword = false,
+    this.triggerKeywords = const [],
+    this.dmMessage,
+    this.dmButtons = const [],
+    this.openingMessage,
+    this.openingButtonText,
   });
 
   /// Factory constructor to create a new automation
@@ -80,6 +98,9 @@ class Automation {
       createdAt: now,
       updatedAt: now,
       currentStep: 0,
+      anyKeyword: false,
+      triggerKeywords: const [],
+      dmButtons: const [],
     );
   }
 
@@ -99,6 +120,12 @@ class Automation {
       configuration: Map<String, dynamic>.from(json['configuration'] ?? {}),
       stepCount: json['step_count'] as int? ?? 6,
       currentStep: json['current_step'] as int? ?? 0,
+      anyKeyword: json['any_keyword'] as bool? ?? false,
+      triggerKeywords: List<String>.from(json['trigger_keywords'] ?? []),
+      dmMessage: json['dm_message'] as String?,
+      dmButtons: (json['dm_buttons'] as List?)?.map((item) => DMButton.fromJson(item)).toList() ?? [],
+      openingMessage: json['opening_message'] as String?,
+      openingButtonText: json['opening_button_text'] as String?,
     );
   }
 
@@ -115,6 +142,12 @@ class Automation {
       'configuration': configuration,
       'step_count': stepCount,
       'current_step': currentStep,
+      'any_keyword': anyKeyword,
+      'trigger_keywords': triggerKeywords,
+      'dm_message': dmMessage,
+      'dm_buttons': dmButtons.map((button) => button.toJson()).toList(),
+      'opening_message': openingMessage,
+      'opening_button_text': openingButtonText,
     };
   }
 
@@ -130,6 +163,12 @@ class Automation {
     Map<String, dynamic>? configuration,
     int? stepCount,
     int? currentStep,
+    bool? anyKeyword,
+    List<String>? triggerKeywords,
+    String? dmMessage,
+    List<DMButton>? dmButtons,
+    String? openingMessage,
+    String? openingButtonText,
   }) {
     return Automation(
       id: id ?? this.id,
@@ -142,6 +181,12 @@ class Automation {
       configuration: configuration ?? Map<String, dynamic>.from(this.configuration),
       stepCount: stepCount ?? this.stepCount,
       currentStep: currentStep ?? this.currentStep,
+      anyKeyword: anyKeyword ?? this.anyKeyword,
+      triggerKeywords: triggerKeywords ?? List<String>.from(this.triggerKeywords),
+      dmMessage: dmMessage ?? this.dmMessage,
+      dmButtons: dmButtons ?? List<DMButton>.from(this.dmButtons),
+      openingMessage: openingMessage ?? this.openingMessage,
+      openingButtonText: openingButtonText ?? this.openingButtonText,
     );
   }
 
@@ -191,12 +236,20 @@ class Automation {
     switch (currentStep) {
       case 0: // Select Post step
         return selectedPostId != null && selectedPostId!.isNotEmpty;
-      case 1: // Set Trigger step
-        return configuration.containsKey('trigger');
-      case 2: // Choose Actions step
-        return configuration.containsKey('actions');
-      case 3: // Configure Schedule step
-        return configuration.containsKey('schedule');
+      case 1: // Set Trigger step (Keywords)
+        return anyKeyword || (triggerKeywords.isNotEmpty && triggerKeywords.length <= 3);
+      case 2: // Send DM step
+        return dmMessage != null && 
+               dmMessage!.trim().isNotEmpty && 
+               dmMessage!.length <= 600 &&
+               dmButtons.isNotEmpty &&
+               dmButtons.every((button) => button.isValid);
+      case 3: // Opening Message step
+        return openingMessage != null && 
+               openingMessage!.trim().isNotEmpty && 
+               openingMessage!.length <= 600 &&
+               openingButtonText != null && 
+               openingButtonText!.trim().isNotEmpty;
       case 4: // Set Conditions step
         return configuration.containsKey('conditions');
       case 5: // Review step
@@ -241,4 +294,53 @@ class Automation {
   String toString() {
     return 'Automation(id: $id, name: $name, status: $status, step: $currentStep/$stepCount)';
   }
+}
+
+/// Model representing a DM button with text and link
+class DMButton {
+  final String text;
+  final String link;
+
+  const DMButton({
+    required this.text,
+    required this.link,
+  });
+
+  factory DMButton.fromJson(Map<String, dynamic> json) {
+    return DMButton(
+      text: json['text'] as String? ?? '',
+      link: json['link'] as String? ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'text': text,
+      'link': link,
+    };
+  }
+
+  DMButton copyWith({
+    String? text,
+    String? link,
+  }) {
+    return DMButton(
+      text: text ?? this.text,
+      link: link ?? this.link,
+    );
+  }
+
+  bool get isValid => text.trim().isNotEmpty && link.trim().isNotEmpty;
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is DMButton && other.text == text && other.link == link;
+  }
+
+  @override
+  int get hashCode => text.hashCode ^ link.hashCode;
+
+  @override
+  String toString() => 'DMButton(text: $text, link: $link)';
 }

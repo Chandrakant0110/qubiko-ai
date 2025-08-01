@@ -71,7 +71,7 @@ class LocalAutomationRepository implements AutomationRepository {
       // Sort by creation date (newest first)
       automations.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       return automations;
-    } catch (e, stackTrace) {
+    } catch (e) {
       throw StorageException.loadFailed();
     }
   }
@@ -92,7 +92,7 @@ class LocalAutomationRepository implements AutomationRepository {
       }
 
       await _saveAutomationsList(automations);
-    } catch (e, stackTrace) {
+    } catch (e) {
       if (e is StorageException) rethrow;
       throw StorageException.saveFailed();
     }
@@ -115,7 +115,7 @@ class LocalAutomationRepository implements AutomationRepository {
 
       automations[index] = automation.copyWith(updatedAt: DateTime.now());
       await _saveAutomationsList(automations);
-    } catch (e, stackTrace) {
+    } catch (e) {
       if (e is StorageException) rethrow;
       throw StorageException.saveFailed();
     }
@@ -130,7 +130,7 @@ class LocalAutomationRepository implements AutomationRepository {
       automations.removeWhere((a) => a.id == automationId);
       
       await _saveAutomationsList(automations);
-    } catch (e, stackTrace) {
+    } catch (e) {
       if (e is StorageException) rethrow;
       throw StorageException.saveFailed();
     }
@@ -145,7 +145,7 @@ class LocalAutomationRepository implements AutomationRepository {
       } catch (e) {
         return null; // Not found
       }
-    } catch (e, stackTrace) {
+    } catch (e) {
       throw StorageException.loadFailed();
     }
   }
@@ -163,7 +163,7 @@ class LocalAutomationRepository implements AutomationRepository {
 
       final draftsJson = drafts.map((d) => json.encode(d.toJson())).toList();
       await _prefs.setStringList(AutomationConstants.draftsStorageKey, draftsJson);
-    } catch (e, stackTrace) {
+    } catch (e) {
       throw StorageException.saveFailed();
     }
   }
@@ -190,7 +190,7 @@ class LocalAutomationRepository implements AutomationRepository {
       }
 
       return drafts;
-    } catch (e, stackTrace) {
+    } catch (e) {
       throw StorageException.loadFailed();
     }
   }
@@ -200,7 +200,7 @@ class LocalAutomationRepository implements AutomationRepository {
     try {
       await _ensureInitialized();
       await _prefs.remove(AutomationConstants.draftsStorageKey);
-    } catch (e, stackTrace) {
+    } catch (e) {
       throw StorageException.saveFailed();
     }
   }

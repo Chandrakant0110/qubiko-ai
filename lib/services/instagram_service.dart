@@ -49,7 +49,7 @@ class HttpInstagramService implements InstagramService {
     } on NetworkException {
       // Re-throw network exceptions as-is
       rethrow;
-    } on http.ClientException catch (e) {
+    } on http.ClientException {
       // Handle HTTP client exceptions
       throw NetworkException.connectionFailed();
     } catch (e, stackTrace) {
@@ -137,7 +137,7 @@ class MockInstagramService implements InstagramService {
 
     // Throw error if specified (for testing error scenarios)
     if (_errorToThrow != null) {
-      throw _errorToThrow!;
+      throw _errorToThrow;
     }
 
     return List.from(_mockPosts);

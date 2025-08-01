@@ -76,9 +76,9 @@ class PostGridItem extends StatelessWidget {
           borderRadius: BorderRadius.circular(UIConstants.borderRadiusMedium),
           border: Border.all(
             color: isSelected
-                ? AppColors.primaryLightBlue
+                ? AppColors.successGreen
                 : Colors.grey[300]!,
-            width: isSelected ? 2 : 1,
+            width: isSelected ? 3 : 1,
           ),
         ),
         child: Column(
@@ -199,7 +199,7 @@ class PostSelectionIndicator extends StatelessWidget {
       width: 24,
       height: 24,
       decoration: BoxDecoration(
-        color: AppColors.primaryLightBlue,
+        color: AppColors.successGreen,
         borderRadius: BorderRadius.circular(12),
       ),
       child: const Icon(
