@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'home_screen.dart';
 import 'main_page.dart';
+import 'automation_screen.dart';
 
 class MainNavigation extends ConsumerStatefulWidget {
   const MainNavigation({super.key});
@@ -16,6 +17,7 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
   final List<Widget> _screens = [
     const HomeScreen(),
     const MainPage(),
+    const AutomationScreen(),
   ];
 
   @override
@@ -40,6 +42,10 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
           BottomNavigationBarItem(
             icon: Icon(Icons.dashboard),
             label: 'Main',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.auto_awesome),
+            label: 'Automation',
           ),
         ],
       ),
