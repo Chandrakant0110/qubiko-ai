@@ -27,7 +27,7 @@ class _KeywordSetupWidgetState extends ConsumerState<KeywordSetupWidget> {
   @override
   Widget build(BuildContext context) {
     final currentAutomation = ref.watch(currentAutomationProvider);
-    
+
     if (currentAutomation == null) {
       return const Center(child: Text('No automation data'));
     }
@@ -87,12 +87,12 @@ class _KeywordSetupWidgetState extends ConsumerState<KeywordSetupWidget> {
     return Container(
       padding: const EdgeInsets.all(UIConstants.paddingLarge),
       decoration: BoxDecoration(
-        color: automation.anyKeyword 
+        color: automation.anyKeyword
             ? AppColors.primaryLightBlue.withOpacity(0.1)
             : Colors.grey[50],
         borderRadius: BorderRadius.circular(UIConstants.borderRadiusMedium),
         border: Border.all(
-          color: automation.anyKeyword 
+          color: automation.anyKeyword
               ? AppColors.primaryLightBlue.withOpacity(0.3)
               : Colors.grey[300]!,
           width: 1.5,
@@ -104,14 +104,16 @@ class _KeywordSetupWidgetState extends ConsumerState<KeywordSetupWidget> {
             width: UIConstants.iconSizeXLarge,
             height: UIConstants.iconSizeXLarge,
             decoration: BoxDecoration(
-              color: automation.anyKeyword 
+              color: automation.anyKeyword
                   ? AppColors.primaryLightBlue.withOpacity(0.2)
                   : Colors.grey[200],
-              borderRadius: BorderRadius.circular(UIConstants.iconSizeXLarge / 2),
+              borderRadius: BorderRadius.circular(
+                UIConstants.iconSizeXLarge / 2,
+              ),
             ),
             child: Icon(
               Icons.all_inclusive,
-              color: automation.anyKeyword 
+              color: automation.anyKeyword
                   ? AppColors.primaryLightBlue
                   : Colors.grey[600],
               size: UIConstants.iconSizeMedium,
@@ -146,9 +148,9 @@ class _KeywordSetupWidgetState extends ConsumerState<KeywordSetupWidget> {
             child: Switch(
               value: automation.anyKeyword,
               onChanged: (value) {
-                ref.read(currentAutomationProvider.notifier).updateKeywordSettings(
-                  anyKeyword: value,
-                );
+                ref
+                    .read(currentAutomationProvider.notifier)
+                    .updateKeywordSettings(anyKeyword: value);
               },
               activeColor: AppColors.primaryLightBlue,
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -181,7 +183,9 @@ class _KeywordSetupWidgetState extends ConsumerState<KeywordSetupWidget> {
               ),
               decoration: BoxDecoration(
                 color: AppColors.primaryLightBlue.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(UIConstants.borderRadiusSmall),
+                borderRadius: BorderRadius.circular(
+                  UIConstants.borderRadiusSmall,
+                ),
               ),
               child: Text(
                 '${automation.triggerKeywords.length}/3',
@@ -197,17 +201,14 @@ class _KeywordSetupWidgetState extends ConsumerState<KeywordSetupWidget> {
         const SizedBox(height: UIConstants.paddingSmall),
         Text(
           'Add up to 3 specific keywords that will trigger this automation',
-          style: GoogleFonts.urbanist(
-            fontSize: 14,
-            color: Colors.grey[600],
-          ),
+          style: GoogleFonts.urbanist(fontSize: 14, color: Colors.grey[600]),
         ),
         const SizedBox(height: UIConstants.paddingMedium),
         if (automation.triggerKeywords.isNotEmpty)
           _buildKeywordChips(automation)
         else
           const SizedBox.shrink(),
-          // _buildEmptyKeywords(),
+        // _buildEmptyKeywords(),
       ],
     );
   }
@@ -249,7 +250,9 @@ class _KeywordSetupWidgetState extends ConsumerState<KeywordSetupWidget> {
               const SizedBox(width: UIConstants.paddingSmall),
               GestureDetector(
                 onTap: () {
-                  ref.read(currentAutomationProvider.notifier).removeTriggerKeyword(keyword);
+                  ref
+                      .read(currentAutomationProvider.notifier)
+                      .removeTriggerKeyword(keyword);
                 },
                 child: Container(
                   width: 18,
@@ -258,11 +261,7 @@ class _KeywordSetupWidgetState extends ConsumerState<KeywordSetupWidget> {
                     color: Colors.red.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(9),
                   ),
-                  child: const Icon(
-                    Icons.close,
-                    size: 12,
-                    color: Colors.red,
-                  ),
+                  child: const Icon(Icons.close, size: 12, color: Colors.red),
                 ),
               ),
             ],
@@ -272,175 +271,198 @@ class _KeywordSetupWidgetState extends ConsumerState<KeywordSetupWidget> {
     );
   }
 
-  Widget _buildEmptyKeywords() {
-    return Container(
-      padding: const EdgeInsets.all(UIConstants.paddingLarge),
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(UIConstants.borderRadiusMedium),
-        border: Border.all(color: Colors.grey[300]!),
-      ),
-      child: Column(
-        children: [
-          Icon(
-            Icons.label_outline,
-            size: 48,
-            color: Colors.grey[400],
-          ),
-          const SizedBox(height: UIConstants.paddingMedium),
-          Text(
-            'No keywords added yet',
-            style: GoogleFonts.urbanist(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey[600],
-            ),
-          ),
-          const SizedBox(height: UIConstants.paddingSmall),
-          Text(
-            'Add specific keywords to trigger your automation',
-            style: GoogleFonts.urbanist(
-              fontSize: 14,
-              color: Colors.grey[500],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildEmptyKeywords() {
+  //   return Container(
+  //     padding: const EdgeInsets.all(UIConstants.paddingLarge),
+  //     decoration: BoxDecoration(
+  //       color: Colors.grey[50],
+  //       borderRadius: BorderRadius.circular(UIConstants.borderRadiusMedium),
+  //       border: Border.all(color: Colors.grey[300]!),
+  //     ),
+  //     child: Column(
+  //       children: [
+  //         Icon(
+  //           Icons.label_outline,
+  //           size: 48,
+  //           color: Colors.grey[400],
+  //         ),
+  //         const SizedBox(height: UIConstants.paddingMedium),
+  //         Text(
+  //           'No keywords added yet',
+  //           style: GoogleFonts.urbanist(
+  //             fontSize: 16,
+  //             fontWeight: FontWeight.w600,
+  //             color: Colors.grey[600],
+  //           ),
+  //         ),
+  //         const SizedBox(height: UIConstants.paddingSmall),
+  //         Text(
+  //           'Add specific keywords to trigger your automation',
+  //           style: GoogleFonts.urbanist(
+  //             fontSize: 14,
+  //             color: Colors.grey[500],
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Widget _buildAddKeywordSection(Automation automation) {
     final canAddMore = automation.triggerKeywords.length < 3;
 
-    return canAddMore ? Container(
-      padding: const EdgeInsets.all(UIConstants.paddingLarge),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(UIConstants.borderRadiusMedium),
-        border: Border.all(color: Colors.grey[300]!),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header with icon
-          Row(
-            children: [
-              Container(
-                width: UIConstants.iconSizeLarge,
-                height: UIConstants.iconSizeLarge,
-                decoration: BoxDecoration(
-                  color: AppColors.primaryLightBlue.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(UIConstants.iconSizeLarge / 2),
-                ),
-                child: Icon(
-                  Icons.add_circle_outline,
-                  color: AppColors.primaryLightBlue,
-                  size: UIConstants.iconSizeMedium,
-                ),
+    return canAddMore
+        ? Container(
+            padding: const EdgeInsets.all(UIConstants.paddingLarge),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(
+                UIConstants.borderRadiusMedium,
               ),
-              const SizedBox(width: UIConstants.paddingMedium),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              border: Border.all(color: Colors.grey[300]!),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header with icon
+                Row(
                   children: [
-                    Text(
-                      'Add Keywords',
-                      style: GoogleFonts.urbanist(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
+                    Container(
+                      width: UIConstants.iconSizeLarge,
+                      height: UIConstants.iconSizeLarge,
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryLightBlue.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(
+                          UIConstants.iconSizeLarge / 2,
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.add_circle_outline,
+                        color: AppColors.primaryLightBlue,
+                        size: UIConstants.iconSizeMedium,
                       ),
                     ),
-                    Text(
-                      canAddMore ? 'Type & Hit + Enter to add Keyword' : 'Maximum 3 keywords reached',
-                      style: GoogleFonts.urbanist(
-                        fontSize: 14,
-                        color: canAddMore ? Colors.grey[600] : Colors.red[400],
+                    const SizedBox(width: UIConstants.paddingMedium),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Add Keywords',
+                            style: GoogleFonts.urbanist(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          Text(
+                            canAddMore
+                                ? 'Type & Hit + Enter to add Keyword'
+                                : 'Maximum 3 keywords reached',
+                            style: GoogleFonts.urbanist(
+                              fontSize: 14,
+                              color: canAddMore
+                                  ? Colors.grey[600]
+                                  : Colors.red[400],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: UIConstants.paddingMedium),
-          
-          // Enhanced input field
-          TextField(
-            controller: _keywordController,
-            enabled: canAddMore,
-            style: GoogleFonts.urbanist(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-            ),
-            decoration: InputDecoration(
-              hintText: canAddMore ? 'Type & Hit + Enter to add Keyword' : 'Maximum reached',
-              hintStyle: GoogleFonts.urbanist(
-                color: Colors.grey[400],
-              ),
-              filled: true,
-              fillColor: canAddMore ? Colors.grey[50] : Colors.grey[100],
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(UIConstants.borderRadiusMedium),
-                borderSide: BorderSide(color: Colors.grey[300]!),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(UIConstants.borderRadiusMedium),
-                borderSide: BorderSide(color: Colors.grey[300]!),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(UIConstants.borderRadiusMedium),
-                borderSide: BorderSide(color: AppColors.primaryLightBlue, width: 2),
-              ),
-              disabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(UIConstants.borderRadiusMedium),
-                borderSide: BorderSide(color: Colors.grey[300]!),
-              ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: UIConstants.paddingMedium,
-                vertical: UIConstants.paddingMedium,
-              ),
-              suffixIcon: canAddMore ? GestureDetector(
-                onTap: () => _addKeyword(_keywordController.text),
-                child: Container(
-                  margin: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryLightBlue,
-                    borderRadius: BorderRadius.circular(6),
+                const SizedBox(height: UIConstants.paddingMedium),
+
+                // Enhanced input field
+                TextField(
+                  controller: _keywordController,
+                  enabled: canAddMore,
+                  style: GoogleFonts.urbanist(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
                   ),
-                  child: const Icon(
-                    Icons.add,
-                    color: Colors.white,
-                    size: 20,
+                  decoration: InputDecoration(
+                    hintText: canAddMore
+                        ? 'Type & Hit + Enter to add Keyword'
+                        : 'Maximum reached',
+                    hintStyle: GoogleFonts.urbanist(color: Colors.grey[400]),
+                    filled: true,
+                    fillColor: canAddMore ? Colors.grey[50] : Colors.grey[100],
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(
+                        UIConstants.borderRadiusMedium,
+                      ),
+                      borderSide: BorderSide(color: Colors.grey[300]!),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(
+                        UIConstants.borderRadiusMedium,
+                      ),
+                      borderSide: BorderSide(color: Colors.grey[300]!),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(
+                        UIConstants.borderRadiusMedium,
+                      ),
+                      borderSide: BorderSide(
+                        color: AppColors.primaryLightBlue,
+                        width: 2,
+                      ),
+                    ),
+                    disabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(
+                        UIConstants.borderRadiusMedium,
+                      ),
+                      borderSide: BorderSide(color: Colors.grey[300]!),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: UIConstants.paddingMedium,
+                      vertical: UIConstants.paddingMedium,
+                    ),
+                    suffixIcon: canAddMore
+                        ? GestureDetector(
+                            onTap: () => _addKeyword(_keywordController.text),
+                            child: Container(
+                              margin: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryLightBlue,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Icon(
+                                Icons.add,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                            ),
+                          )
+                        : null,
                   ),
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: canAddMore ? _addKeyword : null,
                 ),
-              ) : null,
+
+                if (canAddMore) ...[
+                  const SizedBox(height: UIConstants.paddingSmall),
+                  Text(
+                    'Case-sensitive keywords allowed (e.g., "Link", "link", "LINK" are different)',
+                    style: GoogleFonts.urbanist(
+                      fontSize: 12,
+                      color: Colors.grey[500],
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
+              ],
             ),
-            textInputAction: TextInputAction.done,
-            onSubmitted: canAddMore ? _addKeyword : null,
-          ),
-          
-          if (canAddMore) ...[
-            const SizedBox(height: UIConstants.paddingSmall),
-            Text(
-              'Case-sensitive keywords allowed (e.g., "Link", "link", "LINK" are different)',
-              style: GoogleFonts.urbanist(
-                fontSize: 12,
-                color: Colors.grey[500],
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-          ],
-        ],
-      ),
-    ) : const SizedBox.shrink();
+          )
+        : const SizedBox.shrink();
   }
 
   Widget _buildInfoCard() {
@@ -456,9 +478,7 @@ class _KeywordSetupWidgetState extends ConsumerState<KeywordSetupWidget> {
           ],
         ),
         borderRadius: BorderRadius.circular(UIConstants.borderRadiusMedium),
-        border: Border.all(
-          color: AppColors.primaryLightBlue.withOpacity(0.2),
-        ),
+        border: Border.all(color: AppColors.primaryLightBlue.withOpacity(0.2)),
       ),
       child: Row(
         children: [
@@ -467,7 +487,9 @@ class _KeywordSetupWidgetState extends ConsumerState<KeywordSetupWidget> {
             height: UIConstants.iconSizeXLarge,
             decoration: BoxDecoration(
               color: AppColors.primaryLightBlue.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(UIConstants.iconSizeXLarge / 2),
+              borderRadius: BorderRadius.circular(
+                UIConstants.iconSizeXLarge / 2,
+              ),
             ),
             child: Icon(
               Icons.lightbulb_outline,
@@ -509,12 +531,14 @@ class _KeywordSetupWidgetState extends ConsumerState<KeywordSetupWidget> {
     final trimmedKeyword = keyword.trim(); // Keep original case
     if (trimmedKeyword.isNotEmpty) {
       final currentAutomation = ref.read(currentAutomationProvider);
-      if (currentAutomation != null && 
+      if (currentAutomation != null &&
           currentAutomation.triggerKeywords.length < 3 &&
           !currentAutomation.triggerKeywords.contains(trimmedKeyword)) {
-        ref.read(currentAutomationProvider.notifier).addTriggerKeyword(trimmedKeyword);
+        ref
+            .read(currentAutomationProvider.notifier)
+            .addTriggerKeyword(trimmedKeyword);
         _keywordController.clear();
-        
+
         // Show success feedback with haptic
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -533,7 +557,8 @@ class _KeywordSetupWidgetState extends ConsumerState<KeywordSetupWidget> {
             ),
           ),
         );
-      } else if (currentAutomation?.triggerKeywords.contains(trimmedKeyword) == true) {
+      } else if (currentAutomation?.triggerKeywords.contains(trimmedKeyword) ==
+          true) {
         // Show duplicate keyword message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
