@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../constants/app_colors.dart';
@@ -150,87 +151,139 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       );
     }
 
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppColors.authBackgroundGradient,
-        ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                minHeight: MediaQuery.of(context).size.height -
-                    MediaQuery.of(context).padding.top -
-                    MediaQuery.of(context).padding.bottom,
-              ),
-              child: IntrinsicHeight(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 40),
+    return Stack(
+      children: [
+        Scaffold(
+          body: Container(
+            decoration: const BoxDecoration(
+              gradient: AppColors.authBackgroundGradient,
+            ),
+            child: SafeArea(
+              child: SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: MediaQuery.of(context).size.height -
+                        MediaQuery.of(context).padding.top -
+                        MediaQuery.of(context).padding.bottom,
+                  ),
+                  child: IntrinsicHeight(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 40),
 
-                      // Welcome text - using RichText to handle the emoji separately
-                      _buildWelcomeText(),
+                          // Welcome text - using RichText to handle the emoji separately
+                          _buildWelcomeText(),
 
-                      const SizedBox(height: 40),
+                          const SizedBox(height: 40),
 
-                      // Email field
-                      _buildEmailField(),
+                          // Email field
+                          _buildEmailField(),
 
-                      const SizedBox(height: 16),
+                          const SizedBox(height: 16),
 
-                      // Password field
-                      _buildPasswordField(),
+                          // Password field
+                          _buildPasswordField(),
 
-                      const SizedBox(height: 16),
+                          const SizedBox(height: 16),
 
-                      // "Forgot Password?" text
-                      if (_isLogin) _buildForgotPasswordButton(),
+                          // "Forgot Password?" text
+                          if (_isLogin) _buildForgotPasswordButton(),
 
-                      const SizedBox(height: 24),
+                          const SizedBox(height: 24),
 
-                      // Login or Sign up button
-                      AuthButton(
-                        text: _isLogin ? 'Log in' : 'Sign up',
-                        onPressed:
-                            _isLogin ? _onLoginPressed : _onSignUpPressed,
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      // Toggle button
-                      TextButton(
-                        onPressed: _toggleAuthMode,
-                        child: Text(
-                          _isLogin
-                              ? 'Don\'t have an account? Sign up'
-                              : 'Already have an account? Log in',
-                          style: TextStyle(
-                            color: AppColors.primaryLightBlue,
-                            fontWeight: FontWeight.w600,
+                          // Login or Sign up button
+                          AuthButton(
+                            text: _isLogin ? 'Log in' : 'Sign up',
+                            onPressed:
+                                _isLogin ? _onLoginPressed : _onSignUpPressed,
                           ),
-                        ),
+
+                          const SizedBox(height: 16),
+
+                          // Toggle button
+                          TextButton(
+                            onPressed: _toggleAuthMode,
+                            child: Text(
+                              _isLogin
+                                  ? 'Don\'t have an account? Sign up'
+                                  : 'Already have an account? Log in',
+                              style: TextStyle(
+                                color: AppColors.primaryLightBlue,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+
+                          // "Or continue with" section
+                          const SizedBox(height: 32),
+                          _buildDividerWithText('or continue with'),
+
+                          // Social login buttons
+                          const SizedBox(height: 24),
+                          _buildSocialButtons(),
+
+                          const Spacer(),
+                          const SizedBox(height: 20),
+                        ],
                       ),
-
-                      // "Or continue with" section
-                      const SizedBox(height: 32),
-                      _buildDividerWithText('or continue with'),
-
-                      // Social login buttons
-                      const SizedBox(height: 24),
-                      _buildSocialButtons(),
-
-                      const Spacer(),
-                      const SizedBox(height: 20),
-                    ],
+                    ),
                   ),
                 ),
               ),
             ),
           ),
         ),
-      ),
+
+        // ── DEV ONLY: bypass auth and jump straight to home ──────────────
+        if (kDebugMode)
+          SafeArea(
+            child: Align(
+              alignment: Alignment.topRight,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 8, right: 12),
+                child: GestureDetector(
+                  onTap: () =>
+                      Navigator.pushReplacementNamed(context, '/home'),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade600,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.25),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.developer_mode,
+                            color: Colors.white, size: 14),
+                        SizedBox(width: 4),
+                        Text(
+                          'DEV',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        // ─────────────────────────────────────────────────────────────────
+      ],
     );
   }
 
