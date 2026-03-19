@@ -105,13 +105,6 @@ class AppTheme {
         elevation: 0,
         titleTextStyle: textTheme.titleLarge,
       ),
-      cardTheme: CardTheme(
-        color: AppColors.cardLight,
-        elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-      ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: colorScheme.primary,
@@ -181,13 +174,6 @@ class AppTheme {
         foregroundColor: colorScheme.onSurface,
         elevation: 0,
         titleTextStyle: textTheme.titleLarge,
-      ),
-      cardTheme: CardTheme(
-        color: AppColors.cardDark,
-        elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(

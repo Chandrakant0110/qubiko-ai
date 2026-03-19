@@ -3,54 +3,35 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/foundation.dart';
 import '../../models/user_model.dart';
 
-enum AuthStatus {
-  authenticated,
-  unauthenticated,
-  loading,
-  error,
-}
+enum AuthStatus { authenticated, unauthenticated, loading, error }
 
 class AuthResult {
   final AuthStatus status;
   final UserModel? user;
   final String? errorMessage;
 
-  AuthResult({
-    required this.status,
-    this.user,
-    this.errorMessage,
-  });
+  AuthResult({required this.status, this.user, this.errorMessage});
 
   factory AuthResult.authenticated(UserModel user) {
-    return AuthResult(
-      status: AuthStatus.authenticated,
-      user: user,
-    );
+    return AuthResult(status: AuthStatus.authenticated, user: user);
   }
 
   factory AuthResult.unauthenticated() {
-    return AuthResult(
-      status: AuthStatus.unauthenticated,
-    );
+    return AuthResult(status: AuthStatus.unauthenticated);
   }
 
   factory AuthResult.loading() {
-    return AuthResult(
-      status: AuthStatus.loading,
-    );
+    return AuthResult(status: AuthStatus.loading);
   }
 
   factory AuthResult.error(String errorMessage) {
-    return AuthResult(
-      status: AuthStatus.error,
-      errorMessage: errorMessage,
-    );
+    return AuthResult(status: AuthStatus.error, errorMessage: errorMessage);
   }
 }
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  GoogleSignIn get _googleSignIn => GoogleSignIn.instance;
 
   // Stream of authentication state changes
   Stream<User?> get authStateChanges => _auth.authStateChanges();
@@ -72,8 +53,12 @@ class AuthService {
   // Sign in with Google
   Future<AuthResult> signInWithGoogle() async {
     try {
-      // Start the sign-in process
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      // Initialize Google Sign-In if needed
+      await _googleSignIn.initialize();
+
+      // Start the sign-in process using authenticate() instead of signIn()
+      final GoogleSignInAccount? googleUser = await _googleSignIn
+          .authenticate();
 
       if (googleUser == null) {
         // User cancelled the sign-in flow
@@ -81,18 +66,23 @@ class AuthService {
       }
 
       // Obtain the auth details from the request
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
+
+      // Get access token from authorization client for Firebase
+      final authz = await googleUser.authorizationClient.authorizationForScopes(
+        ['openid', 'email', 'profile'],
+      );
 
       // Create a new credential
       final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
+        accessToken: authz?.accessToken,
         idToken: googleAuth.idToken,
       );
 
       // Sign in to Firebase with the Google credential
-      final UserCredential userCredential =
-          await _auth.signInWithCredential(credential);
+      final UserCredential userCredential = await _auth.signInWithCredential(
+        credential,
+      );
       final User? user = userCredential.user;
 
       if (user != null) {
@@ -108,13 +98,12 @@ class AuthService {
 
   // Sign in with email and password
   Future<AuthResult> signInWithEmailAndPassword(
-      String email, String password) async {
+    String email,
+    String password,
+  ) async {
     try {
-      final UserCredential userCredential =
-          await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      final UserCredential userCredential = await _auth
+          .signInWithEmailAndPassword(email: email, password: password);
       final User? user = userCredential.user;
 
       if (user != null) {
@@ -150,20 +139,20 @@ class AuthService {
 
   // Sign up with email and password
   Future<AuthResult> signUpWithEmailAndPassword(
-      String email, String password) async {
+    String email,
+    String password,
+  ) async {
     try {
-      final UserCredential userCredential =
-          await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      final UserCredential userCredential = await _auth
+          .createUserWithEmailAndPassword(email: email, password: password);
       final User? user = userCredential.user;
 
       if (user != null) {
         return AuthResult.authenticated(UserModel.fromFirebase(user));
       } else {
         return AuthResult.error(
-            'Failed to create user with email and password');
+          'Failed to create user with email and password',
+        );
       }
     } on FirebaseAuthException catch (e) {
       String errorMessage = '';

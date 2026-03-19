@@ -49,19 +49,22 @@ class _MainPageState extends ConsumerState<MainPage> {
   Future<void> _initAppLinks() async {
     try {
       // Handle initial link if app was launched from a link
-      final initialLink = await _appLinks.getInitialAppLink();
+      final initialLink = await _appLinks.getInitialLink();
       if (initialLink != null) {
         _handleCallback(initialLink.toString());
       }
 
       // Handle links when app is already running
-      _linkSubscription = _appLinks.uriLinkStream.listen((Uri? uri) {
-        if (uri != null) {
-          _handleCallback(uri.toString());
-        }
-      }, onError: (err) {
-        print('Error handling deep link: $err');
-      });
+      _linkSubscription = _appLinks.uriLinkStream.listen(
+        (Uri? uri) {
+          if (uri != null) {
+            _handleCallback(uri.toString());
+          }
+        },
+        onError: (err) {
+          print('Error handling deep link: $err');
+        },
+      );
     } catch (e) {
       print('Error initializing app_links: $e');
     }
@@ -141,14 +144,14 @@ class _MainPageState extends ConsumerState<MainPage> {
       backgroundColor: Colors.black87,
       textColor: Colors.white,
     );
-    
   }
 
   Future<void> _connectInstagram() async {
-    const url = 'https://www.instagram.com/oauth/authorize?force_reauth=true&client_id=2935772819942060&redirect_uri=https://chandrakant-s4-n8n-duplicate.hf.space/webhook/instagram-login&response_type=code&scope=instagram_business_basic%2Cinstagram_business_manage_messages%2Cinstagram_business_manage_comments%2Cinstagram_business_content_publish%2Cinstagram_business_manage_insights';
+    const url =
+        'https://www.instagram.com/oauth/authorize?force_reauth=true&client_id=2935772819942060&redirect_uri=https://chandrakant-s4-n8n-duplicate.hf.space/webhook/instagram-login&response_type=code&scope=instagram_business_basic%2Cinstagram_business_manage_messages%2Cinstagram_business_manage_comments%2Cinstagram_business_content_publish%2Cinstagram_business_manage_insights';
 
     try {
-        await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
       if (await canLaunchUrl(Uri.parse(url))) {
         _showToast('Opening Instagram authorization...');
       } else {
@@ -214,12 +217,25 @@ class _MainPageState extends ConsumerState<MainPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(profile["username"] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                  Text(
+                    profile["username"] ?? '',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
                   Text(profile["account_type"] ?? ''),
                   if (profile["biography"] != null)
-                    Text(profile["biography"], maxLines: 2, overflow: TextOverflow.ellipsis),
+                    Text(
+                      profile["biography"],
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   if (profile["website"] != null)
-                    Text(profile["website"], style: const TextStyle(color: Colors.blue)),
+                    Text(
+                      profile["website"],
+                      style: const TextStyle(color: Colors.blue),
+                    ),
                   Row(
                     children: [
                       Text('Posts: ${profile["media_count"] ?? 0}'),
@@ -364,14 +380,15 @@ class _MainPageState extends ConsumerState<MainPage> {
           // Theme switcher button
           IconButton(
             icon: ValueListenableBuilder<ThemeMode>(
-                valueListenable: themeNotifier,
-                builder: (_, ThemeMode currentMode, __) {
-                  return Icon(
-                    currentMode == ThemeMode.dark
-                        ? Icons.light_mode
-                        : Icons.dark_mode,
-                  );
-                }),
+              valueListenable: themeNotifier,
+              builder: (_, ThemeMode currentMode, __) {
+                return Icon(
+                  currentMode == ThemeMode.dark
+                      ? Icons.light_mode
+                      : Icons.dark_mode,
+                );
+              },
+            ),
             onPressed: () {
               final currentTheme = themeNotifier.value;
               themeNotifier.value = currentTheme == ThemeMode.dark
@@ -441,7 +458,9 @@ class _MainPageState extends ConsumerState<MainPage> {
                     Text('Status: Connected'),
                     Text('Token Type: Bearer'),
                     if (_expiresAt != null)
-                      Text('Expires: ${DateTime.parse(_expiresAt!).toString().substring(0, 19)}'),
+                      Text(
+                        'Expires: ${DateTime.parse(_expiresAt!).toString().substring(0, 19)}',
+                      ),
                   ],
                 ),
               ),
@@ -473,7 +492,8 @@ class _MainPageState extends ConsumerState<MainPage> {
                     ElevatedButton(
                       onPressed: () {
                         // Simulate OAuth callback
-                        final testCallback = 'qubikoai://callback?token_type=bearer&expires_in=5184000&access_token=test_token_123456789';
+                        final testCallback =
+                            'qubikoai://callback?token_type=bearer&expires_in=5184000&access_token=test_token_123456789';
                         _handleCallback(testCallback);
                       },
                       child: Text('Test OAuth Callback'),
@@ -491,4 +511,4 @@ class _MainPageState extends ConsumerState<MainPage> {
       ),
     );
   }
-} 
+}

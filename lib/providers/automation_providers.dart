@@ -27,68 +27,77 @@ final automationRepositoryProvider = Provider<AutomationRepository>((ref) {
 
 /// State notifier for managing Instagram posts
 /// This handles fetching, caching, and error states for Instagram posts
-class InstagramPostsNotifier extends StateNotifier<AsyncValue<List<InstagramPost>>> {
-  final InstagramService _instagramService;
-
-  InstagramPostsNotifier(this._instagramService) : super(const AsyncValue.loading());
+class InstagramPostsNotifier extends AsyncNotifier<List<InstagramPost>> {
+  @override
+  Future<List<InstagramPost>> build() async {
+    return await fetchPosts();
+  }
 
   /// Fetches Instagram posts from the API
-  Future<void> fetchPosts() async {
+  Future<List<InstagramPost>> fetchPosts() async {
     state = const AsyncValue.loading();
-    
+
     try {
-      final posts = await _instagramService.fetchPosts();
+      final instagramService = ref.read(instagramServiceProvider);
+      final posts = await instagramService.fetchPosts();
       state = AsyncValue.data(posts);
+      return posts;
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
+      rethrow;
     }
   }
 
   /// Refreshes the posts data
-  Future<void> refresh() => fetchPosts();
+  Future<void> refresh() async {
+    ref.invalidateSelf();
+  }
 
   /// Gets a specific post by ID
   InstagramPost? getPostById(String postId) {
-    return state.whenOrNull(
-      data: (posts) => posts.cast<InstagramPost?>().firstWhere(
-        (post) => post?.id == postId,
-        orElse: () => null,
-      ),
+    return state.value?.firstWhere(
+      (post) => post.id == postId,
+      orElse: () => throw StateError('Post not found'),
     );
   }
 }
 
 /// Provider for Instagram posts state
-final instagramPostsProvider = StateNotifierProvider<InstagramPostsNotifier, AsyncValue<List<InstagramPost>>>((ref) {
-  final instagramService = ref.watch(instagramServiceProvider);
-  return InstagramPostsNotifier(instagramService);
-});
+final instagramPostsProvider =
+    AsyncNotifierProvider<InstagramPostsNotifier, List<InstagramPost>>(
+      InstagramPostsNotifier.new,
+    );
 
 /// State notifier for managing automations
 /// This handles CRUD operations and state management for automations
-class AutomationNotifier extends StateNotifier<AsyncValue<List<Automation>>> {
-  final AutomationRepository _repository;
-
-  AutomationNotifier(this._repository) : super(const AsyncValue.loading()) {
-    _loadAutomations();
+class AutomationNotifier extends AsyncNotifier<List<Automation>> {
+  @override
+  Future<List<Automation>> build() async {
+    return await _loadAutomations();
   }
 
   /// Loads all automations from the repository
-  Future<void> _loadAutomations() async {
+  Future<List<Automation>> _loadAutomations() async {
     try {
-      final automations = await _repository.getAllAutomations();
-      state = AsyncValue.data(automations);
+      final repository = ref.read(automationRepositoryProvider);
+      final automations = await repository.getAllAutomations();
+      return automations;
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
+      rethrow;
     }
   }
 
   /// Creates a new automation
   Future<void> createAutomation(String name, {String? description}) async {
     try {
-      final automation = Automation.create(name: name, description: description);
-      await _repository.saveAutomation(automation);
-      await _loadAutomations(); // Refresh the list
+      final repository = ref.read(automationRepositoryProvider);
+      final automation = Automation.create(
+        name: name,
+        description: description,
+      );
+      await repository.saveAutomation(automation);
+      ref.invalidateSelf(); // Refresh the list
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
     }
@@ -97,8 +106,9 @@ class AutomationNotifier extends StateNotifier<AsyncValue<List<Automation>>> {
   /// Updates an existing automation
   Future<void> updateAutomation(Automation automation) async {
     try {
-      await _repository.updateAutomation(automation);
-      await _loadAutomations(); // Refresh the list
+      final repository = ref.read(automationRepositoryProvider);
+      await repository.updateAutomation(automation);
+      ref.invalidateSelf(); // Refresh the list
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
     }
@@ -107,8 +117,9 @@ class AutomationNotifier extends StateNotifier<AsyncValue<List<Automation>>> {
   /// Deletes an automation
   Future<void> deleteAutomation(String automationId) async {
     try {
-      await _repository.deleteAutomation(automationId);
-      await _loadAutomations(); // Refresh the list
+      final repository = ref.read(automationRepositoryProvider);
+      await repository.deleteAutomation(automationId);
+      ref.invalidateSelf(); // Refresh the list
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
     }
@@ -116,23 +127,23 @@ class AutomationNotifier extends StateNotifier<AsyncValue<List<Automation>>> {
 
   /// Gets a specific automation by ID
   Automation? getAutomationById(String automationId) {
-    return state.whenOrNull(
-      data: (automations) => automations.cast<Automation?>().firstWhere(
-        (automation) => automation?.id == automationId,
-        orElse: () => null,
-      ),
+    return state.value?.firstWhere(
+      (automation) => automation.id == automationId,
+      orElse: () => throw StateError('Automation not found'),
     );
   }
 
   /// Refreshes the automations list
-  Future<void> refresh() => _loadAutomations();
+  Future<void> refresh() async {
+    ref.invalidateSelf();
+  }
 }
 
 /// Provider for automations state
-final automationProvider = StateNotifierProvider<AutomationNotifier, AsyncValue<List<Automation>>>((ref) {
-  final repository = ref.watch(automationRepositoryProvider);
-  return AutomationNotifier(repository);
-});
+final automationProvider =
+    AsyncNotifierProvider<AutomationNotifier, List<Automation>>(
+      AutomationNotifier.new,
+    );
 
 // =============================================================================
 // CURRENT AUTOMATION FLOW PROVIDERS
@@ -140,10 +151,11 @@ final automationProvider = StateNotifierProvider<AutomationNotifier, AsyncValue<
 
 /// State notifier for managing the current automation flow
 /// This tracks the current automation being created/edited and its progress
-class CurrentAutomationNotifier extends StateNotifier<Automation?> {
-  final AutomationRepository _repository;
-
-  CurrentAutomationNotifier(this._repository) : super(null);
+class CurrentAutomationNotifier extends Notifier<Automation?> {
+  @override
+  Automation? build() {
+    return null;
+  }
 
   /// Starts a new automation flow
   void startNewAutomation(String name, {String? description}) {
@@ -190,7 +202,10 @@ class CurrentAutomationNotifier extends StateNotifier<Automation?> {
   }
 
   /// Updates keyword trigger settings
-  void updateKeywordSettings({bool? anyKeyword, List<String>? triggerKeywords}) {
+  void updateKeywordSettings({
+    bool? anyKeyword,
+    List<String>? triggerKeywords,
+  }) {
     if (state != null) {
       state = state!.copyWith(
         anyKeyword: anyKeyword,
@@ -202,7 +217,9 @@ class CurrentAutomationNotifier extends StateNotifier<Automation?> {
 
   /// Adds a trigger keyword (max 3 allowed, case-sensitive, no exact duplicates)
   void addTriggerKeyword(String keyword) {
-    if (state != null && state!.triggerKeywords.length < 3 && !state!.triggerKeywords.contains(keyword)) {
+    if (state != null &&
+        state!.triggerKeywords.length < 3 &&
+        !state!.triggerKeywords.contains(keyword)) {
       final newKeywords = List<String>.from(state!.triggerKeywords);
       newKeywords.add(keyword);
       state = state!.copyWith(triggerKeywords: newKeywords);
@@ -223,10 +240,7 @@ class CurrentAutomationNotifier extends StateNotifier<Automation?> {
   /// Updates DM message data
   void updateDMMessage({String? message, List<DMButton>? buttons}) {
     if (state != null) {
-      state = state!.copyWith(
-        dmMessage: message,
-        dmButtons: buttons,
-      );
+      state = state!.copyWith(dmMessage: message, dmButtons: buttons);
       _saveDraft(); // Auto-save as draft
     }
   }
@@ -276,7 +290,8 @@ class CurrentAutomationNotifier extends StateNotifier<Automation?> {
   Future<void> _saveDraft() async {
     if (state != null) {
       try {
-        await _repository.saveDraft(state!);
+        final repository = ref.read(automationRepositoryProvider);
+        await repository.saveDraft(state!);
       } catch (e) {
         // Log error but don't interrupt the flow
         print('Warning: Failed to save draft: $e');
@@ -288,8 +303,9 @@ class CurrentAutomationNotifier extends StateNotifier<Automation?> {
   Future<void> saveAutomation() async {
     if (state != null) {
       try {
+        final repository = ref.read(automationRepositoryProvider);
         final finalAutomation = state!.withStatus(AutomationStatus.active);
-        await _repository.saveAutomation(finalAutomation);
+        await repository.saveAutomation(finalAutomation);
         state = null; // Clear current automation
       } catch (error) {
         throw StorageException.saveFailed();
@@ -305,7 +321,8 @@ class CurrentAutomationNotifier extends StateNotifier<Automation?> {
   /// Loads a draft automation by ID
   Future<void> loadDraft(String automationId) async {
     try {
-      final automation = await _repository.getAutomationById(automationId);
+      final repository = ref.read(automationRepositoryProvider);
+      final automation = await repository.getAutomationById(automationId);
       if (automation != null) {
         state = automation;
       }
@@ -316,23 +333,47 @@ class CurrentAutomationNotifier extends StateNotifier<Automation?> {
 }
 
 /// Provider for current automation flow state
-final currentAutomationProvider = StateNotifierProvider<CurrentAutomationNotifier, Automation?>((ref) {
-  final repository = ref.watch(automationRepositoryProvider);
-  return CurrentAutomationNotifier(repository);
-});
+final currentAutomationProvider =
+    NotifierProvider<CurrentAutomationNotifier, Automation?>(
+      CurrentAutomationNotifier.new,
+    );
 
 // =============================================================================
 // UI STATE PROVIDERS
 // =============================================================================
 
 /// Provider for selected post ID in the automation flow
-final selectedPostIdProvider = StateProvider<String?>((ref) => null);
+class SelectedPostIdNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+}
+
+final selectedPostIdProvider =
+    NotifierProvider<SelectedPostIdNotifier, String?>(
+      SelectedPostIdNotifier.new,
+    );
 
 /// Provider for automation flow loading state
-final automationFlowLoadingProvider = StateProvider<bool>((ref) => false);
+class AutomationFlowLoadingNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+}
+
+final automationFlowLoadingProvider =
+    NotifierProvider<AutomationFlowLoadingNotifier, bool>(
+      AutomationFlowLoadingNotifier.new,
+    );
 
 /// Provider for automation flow error state
-final automationFlowErrorProvider = StateProvider<String?>((ref) => null);
+class AutomationFlowErrorNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+}
+
+final automationFlowErrorProvider =
+    NotifierProvider<AutomationFlowErrorNotifier, String?>(
+      AutomationFlowErrorNotifier.new,
+    );
 
 // =============================================================================
 // COMPUTED PROVIDERS
@@ -360,9 +401,9 @@ final currentStepNumberProvider = Provider<int>((ref) {
 final selectedPostProvider = Provider<InstagramPost?>((ref) {
   final currentAutomation = ref.watch(currentAutomationProvider);
   final instagramPosts = ref.watch(instagramPostsProvider);
-  
+
   if (currentAutomation?.selectedPostId == null) return null;
-  
+
   return instagramPosts.whenOrNull(
     data: (posts) => posts.cast<InstagramPost?>().firstWhere(
       (post) => post?.id == currentAutomation!.selectedPostId,
@@ -382,7 +423,7 @@ final automationOperationsProvider = Provider<AutomationOperations>((ref) {
 
 /// Class that encapsulates automation operations with proper error handling
 class AutomationOperations {
-  final ProviderRef _ref;
+  final Ref _ref;
 
   AutomationOperations(this._ref);
 
@@ -391,13 +432,16 @@ class AutomationOperations {
     if (name.trim().isEmpty) {
       throw ValidationException.fieldRequired('name');
     }
-    
+
     if (name.length > 100) {
       throw ValidationException.fieldTooLong('name', 100);
     }
 
     final automationNotifier = _ref.read(automationProvider.notifier);
-    await automationNotifier.createAutomation(name.trim(), description: description?.trim());
+    await automationNotifier.createAutomation(
+      name.trim(),
+      description: description?.trim(),
+    );
   }
 
   /// Starts a new automation flow with validation
@@ -406,8 +450,13 @@ class AutomationOperations {
       throw ValidationException.fieldRequired('name');
     }
 
-    final currentAutomationNotifier = _ref.read(currentAutomationProvider.notifier);
-    currentAutomationNotifier.startNewAutomation(name.trim(), description: description?.trim());
+    final currentAutomationNotifier = _ref.read(
+      currentAutomationProvider.notifier,
+    );
+    currentAutomationNotifier.startNewAutomation(
+      name.trim(),
+      description: description?.trim(),
+    );
   }
 
   /// Selects a post with validation
@@ -416,7 +465,9 @@ class AutomationOperations {
       throw ValidationException.invalidSelection();
     }
 
-    final currentAutomationNotifier = _ref.read(currentAutomationProvider.notifier);
+    final currentAutomationNotifier = _ref.read(
+      currentAutomationProvider.notifier,
+    );
     currentAutomationNotifier.selectPost(postId);
   }
 }

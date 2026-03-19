@@ -31,22 +31,24 @@ final initialAuthStateProvider = FutureProvider<AuthResult>((ref) async {
 });
 
 // Auth state notifier
-class AuthNotifier extends StateNotifier<AuthResult> {
-  final AuthService _authService;
-
-  AuthNotifier(this._authService) : super(AuthResult.loading()) {
+class AuthNotifier extends Notifier<AuthResult> {
+  @override
+  AuthResult build() {
     _initAuth();
+    return AuthResult.loading();
   }
 
   void _initAuth() {
+    final authService = ref.read(authServiceProvider);
+
     // First check if user is already logged in
-    final currentUser = _authService.getCurrentUser();
+    final currentUser = authService.getCurrentUser();
     if (currentUser != null) {
       state = AuthResult.authenticated(currentUser);
     }
 
     // Then listen to auth state changes
-    _authService.authStateChanges.listen((User? user) {
+    authService.authStateChanges.listen((User? user) {
       if (user == null) {
         state = AuthResult.unauthenticated();
       } else {
@@ -59,7 +61,8 @@ class AuthNotifier extends StateNotifier<AuthResult> {
   Future<void> signInWithGoogle() async {
     try {
       state = AuthResult.loading();
-      state = await _authService.signInWithGoogle();
+      final authService = ref.read(authServiceProvider);
+      state = await authService.signInWithGoogle();
     } catch (e) {
       debugPrint('Error in signInWithGoogle: $e');
       state = AuthResult.error(e.toString());
@@ -70,7 +73,8 @@ class AuthNotifier extends StateNotifier<AuthResult> {
   Future<void> signInWithEmailAndPassword(String email, String password) async {
     try {
       state = AuthResult.loading();
-      state = await _authService.signInWithEmailAndPassword(email, password);
+      final authService = ref.read(authServiceProvider);
+      state = await authService.signInWithEmailAndPassword(email, password);
     } catch (e) {
       debugPrint('Error in signInWithEmailAndPassword: $e');
       state = AuthResult.error(e.toString());
@@ -81,7 +85,8 @@ class AuthNotifier extends StateNotifier<AuthResult> {
   Future<void> signUpWithEmailAndPassword(String email, String password) async {
     try {
       state = AuthResult.loading();
-      state = await _authService.signUpWithEmailAndPassword(email, password);
+      final authService = ref.read(authServiceProvider);
+      state = await authService.signUpWithEmailAndPassword(email, password);
     } catch (e) {
       debugPrint('Error in signUpWithEmailAndPassword: $e');
       state = AuthResult.error(e.toString());
@@ -92,7 +97,8 @@ class AuthNotifier extends StateNotifier<AuthResult> {
   Future<void> signOut() async {
     try {
       state = AuthResult.loading();
-      await _authService.signOut();
+      final authService = ref.read(authServiceProvider);
+      await authService.signOut();
       state = AuthResult.unauthenticated();
     } catch (e) {
       debugPrint('Error in signOut: $e');
@@ -103,7 +109,8 @@ class AuthNotifier extends StateNotifier<AuthResult> {
   // Reset password
   Future<void> resetPassword(String email) async {
     try {
-      state = await _authService.resetPassword(email);
+      final authService = ref.read(authServiceProvider);
+      state = await authService.resetPassword(email);
     } catch (e) {
       debugPrint('Error in resetPassword: $e');
       state = AuthResult.error(e.toString());
@@ -112,12 +119,12 @@ class AuthNotifier extends StateNotifier<AuthResult> {
 
   // Get current user
   UserModel? getCurrentUser() {
-    return _authService.getCurrentUser();
+    final authService = ref.read(authServiceProvider);
+    return authService.getCurrentUser();
   }
 }
 
 // Provider for auth state
-final authProvider = StateNotifierProvider<AuthNotifier, AuthResult>((ref) {
-  final authService = ref.watch(authServiceProvider);
-  return AuthNotifier(authService);
-});
+final authProvider = NotifierProvider<AuthNotifier, AuthResult>(
+  AuthNotifier.new,
+);
