@@ -1,4 +1,7 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/instagram_post.dart';
 import '../constants/api_constants.dart';
@@ -47,19 +50,23 @@ class HttpInstagramService implements InstagramService {
         );
       }
     } on NetworkException {
-      // Re-throw network exceptions as-is
       rethrow;
+    } on SocketException {
+      // No internet / host unreachable
+      throw const NetworkException(
+        'No internet connection. Please check your Wi-Fi or mobile data and try again.',
+        code: 'NETWORK_NO_INTERNET',
+      );
+    } on TimeoutException {
+      // Request took too long
+      throw NetworkException.timeout();
     } on http.ClientException {
-      // Handle HTTP client exceptions
+      // Low-level HTTP client failure
       throw NetworkException.connectionFailed();
     } catch (e, stackTrace) {
-      // Handle any other unexpected errors
-      if (e.toString().contains('timeout')) {
-        throw NetworkException.timeout();
-      }
-      
+      // Catch-all: wrap with a user-friendly message
       throw NetworkException(
-        'Unexpected error occurred while fetching posts.',
+        'Something went wrong. Please try again.',
         originalError: e,
         stackTrace: stackTrace,
       );
@@ -95,7 +102,7 @@ class HttpInstagramService implements InstagramService {
           } catch (e) {
             // Log individual post parsing errors but continue processing
             // In a production app, you might want to use a proper logging service
-            print('Warning: Failed to parse post: $e');
+            debugPrint('Warning: Failed to parse post: $e');
           }
         }
       }

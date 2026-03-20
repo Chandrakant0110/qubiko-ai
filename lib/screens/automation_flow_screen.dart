@@ -5,8 +5,8 @@ import '../constants/app_colors.dart';
 import '../constants/api_constants.dart';
 import '../providers/automation_providers.dart';
 import '../models/automation.dart';
-
 import '../services/exceptions/app_exceptions.dart';
+
 import '../widgets/automation/automation_step_indicator.dart';
 import '../widgets/automation/post_selection_grid.dart';
 import '../widgets/automation/keyword_setup_widget.dart';
@@ -247,51 +247,91 @@ class _AutomationFlowScreenState extends ConsumerState<AutomationFlowScreen> {
 
 
   Widget _buildErrorState(Object error, VoidCallback onRetry) {
-    String errorMessage = 'An unexpected error occurred';
-    
-    if (error is AppException) {
-      errorMessage = error.message;
-    }
+    // Determine whether this is a connectivity issue
+    final isNoInternet = error is NetworkException &&
+        error.code == 'NETWORK_NO_INTERNET';
+    final isTimeout = error is NetworkException &&
+        error.code == 'NETWORK_TIMEOUT';
+    final isNetworkError = error is NetworkException;
+
+    final IconData icon = isNoInternet
+        ? Icons.wifi_off_rounded
+        : isTimeout
+            ? Icons.timer_off_outlined
+            : isNetworkError
+                ? Icons.cloud_off_rounded
+                : Icons.error_outline_rounded;
+
+    final Color iconColor = isNoInternet || isTimeout || isNetworkError
+        ? Colors.orange.shade400
+        : Colors.red.shade400;
+
+    final String title = isNoInternet
+        ? 'No Internet Connection'
+        : isTimeout
+            ? 'Request Timed Out'
+            : isNetworkError
+                ? 'Connection Failed'
+                : 'Something Went Wrong';
+
+    final String message = error is AppException
+        ? error.message
+        : 'An unexpected error occurred. Please try again.';
 
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.error_outline,
-            size: 64,
-            color: Colors.red[400],
-          ),
-          const SizedBox(height: UIConstants.paddingMedium),
-          Text(
-            'Failed to load posts',
-            style: GoogleFonts.urbanist(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+            horizontal: UIConstants.paddingXLarge),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: iconColor.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 40, color: iconColor),
             ),
-          ),
-          const SizedBox(height: UIConstants.paddingSmall),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: UIConstants.paddingXLarge),
-            child: Text(
-              errorMessage,
-              textAlign: TextAlign.center,
+            const SizedBox(height: UIConstants.paddingMedium),
+            Text(
+              title,
               style: GoogleFonts.urbanist(
-                color: Colors.grey[600],
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
               ),
             ),
-          ),
-          const SizedBox(height: UIConstants.paddingLarge),
-          ElevatedButton.icon(
-            onPressed: onRetry,
-            icon: const Icon(Icons.refresh),
-            label: const Text('Retry'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryLightBlue,
-              foregroundColor: Colors.white,
+            const SizedBox(height: UIConstants.paddingSmall),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.urbanist(
+                fontSize: 14,
+                color: Colors.grey[600],
+                height: 1.5,
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: UIConstants.paddingLarge),
+            ElevatedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh_rounded),
+              label: Text(
+                isNoInternet ? 'Retry' : 'Try Again',
+                style: GoogleFonts.urbanist(fontWeight: FontWeight.w600),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryLightBlue,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
