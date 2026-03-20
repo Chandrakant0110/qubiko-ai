@@ -39,19 +39,32 @@ class ShareIntentService {
   }
 
   void _handleSharedFiles(List<SharedMediaFile> files) {
-    // Instagram shares its post URLs as a text/url SharedMediaFile.
-    // The path field carries the actual URL text.
+    // Silently ignore if no files were actually shared
+    // (this prevents false positives when the app returns from background,
+    // e.g. after the Instagram OAuth browser session closes)
+    if (files.isEmpty) {
+      ReceiveSharingIntent.instance.reset();
+      return;
+    }
+
     final text = files
         .map((f) => f.path.trim())
         .firstWhere((p) => p.isNotEmpty, orElse: () => '');
 
+    // No real text content — could be a non-text share or a spurious trigger
+    if (text.isEmpty) {
+      ReceiveSharingIntent.instance.reset();
+      return;
+    }
+
+    // Only show "invalid link" snackbar when user actually shared something
+    // that is not an Instagram URL
     if (_isInstagramUrl(text)) {
       _controller.add(text);
     } else {
-      _controller.add(''); // sentinel → show "invalid link" snackbar
+      _controller.add(''); // sentinel → "Please share a valid Instagram link"
     }
 
-    // Consume so it doesn't re-fire on hot restart / resume.
     ReceiveSharingIntent.instance.reset();
   }
 

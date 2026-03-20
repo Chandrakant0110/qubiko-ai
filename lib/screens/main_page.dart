@@ -164,24 +164,29 @@ class _MainPageState extends ConsumerState<MainPage> {
 
   Future<void> _handleCallback(String callbackUrl) async {
     try {
-      print('Received callback: $callbackUrl');
+      debugPrint('Received callback: $callbackUrl');
       final uri = Uri.parse(callbackUrl);
 
-      // Check if this is our custom scheme
       if (uri.scheme == 'qubikoai') {
         final token = uri.queryParameters['access_token'];
-        final expiresIn = uri.queryParameters['expires_in'];
 
-        if (token != null && expiresIn != null) {
-          await _saveTokenData(token, int.parse(expiresIn));
-          _showToast('Instagram OAuth successful! Token saved.');
+        if (token != null && token.isNotEmpty) {
+          // expires_in may not be present in the callback (n8n webhook omits it).
+          // Instagram long-lived tokens last 60 days = 5,184,000 seconds.
+          const defaultExpiry = 5184000;
+          final expiresIn =
+              int.tryParse(uri.queryParameters['expires_in'] ?? '') ??
+                  defaultExpiry;
+
+          await _saveTokenData(token, expiresIn);
+          _showToast('Instagram connected successfully! ✓');
         } else {
-          _showToast('Invalid callback parameters');
+          _showToast('OAuth failed: no access token received.');
         }
       }
     } catch (e) {
-      print('Error processing callback: $e');
-      _showToast('Error processing callback');
+      debugPrint('Error processing callback: $e');
+      _showToast('Error processing callback. Please try reconnecting.');
     }
   }
 
