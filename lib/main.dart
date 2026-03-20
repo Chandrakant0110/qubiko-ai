@@ -9,6 +9,7 @@ import 'constants/app_theme.dart';
 import 'services/analytics/analytics.dart';
 import 'services/performance/performance.dart';
 import 'services/crashlytics/crashlytics.dart';
+import 'services/share/share_intent_service.dart';
 
 // Theme mode notifier to manage app-wide theme changes
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.system);
@@ -38,6 +39,9 @@ Future<void> main() async {
 
   // Mark app as initialized
   performance.markAppInitialized();
+
+  // Initialize share intent service (must be after WidgetsFlutterBinding)
+  ShareIntentService.instance.initialize();
 
   runApp(const ProviderScope(child: MyApp()));
 }

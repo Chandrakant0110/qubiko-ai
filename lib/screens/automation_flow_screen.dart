@@ -16,7 +16,10 @@ import '../widgets/automation/opening_message_widget.dart';
 /// Screen for managing the automation creation/editing flow
 /// This handles the step-by-step process of building automations
 class AutomationFlowScreen extends ConsumerStatefulWidget {
-  const AutomationFlowScreen({super.key});
+  /// Optional Instagram URL passed in when the screen was triggered via share intent.
+  final String? sharedUrl;
+
+  const AutomationFlowScreen({super.key, this.sharedUrl});
 
   @override
   ConsumerState<AutomationFlowScreen> createState() => _AutomationFlowScreenState();
@@ -152,11 +155,46 @@ class _AutomationFlowScreenState extends ConsumerState<AutomationFlowScreen> {
   Widget _buildSelectPostStep() {
     final postsAsync = ref.watch(instagramPostsProvider);
     final currentAutomation = ref.watch(currentAutomationProvider);
-    
+    final sharedUrl = widget.sharedUrl;
+
     return postsAsync.when(
       data: (posts) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ── Shared URL banner (only when entered via share intent) ────
+          if (sharedUrl != null && sharedUrl.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.fromLTRB(
+                UIConstants.paddingLarge,
+                UIConstants.paddingLarge,
+                UIConstants.paddingLarge,
+                0,
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE3F2FD),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFF90CAF9)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.link, size: 16, color: Color(0xFF1565C0)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      sharedUrl,
+                      style: GoogleFonts.urbanist(
+                        fontSize: 12,
+                        color: const Color(0xFF1565C0),
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.all(UIConstants.paddingLarge),
             child: Column(
