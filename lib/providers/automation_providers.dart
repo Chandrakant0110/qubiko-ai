@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/automation.dart';
 import '../models/instagram_post.dart';
@@ -42,6 +44,12 @@ class InstagramPostsNotifier extends AsyncNotifier<List<InstagramPost>> {
       final posts = await instagramService.fetchPosts();
       state = AsyncValue.data(posts);
       return posts;
+    } on SocketException catch (error, stackTrace) {
+      state = AsyncValue.error(error, stackTrace);
+      rethrow;
+    } on NetworkException catch (error, stackTrace) {
+      state = AsyncValue.error(error, stackTrace);
+      rethrow;
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
       rethrow;

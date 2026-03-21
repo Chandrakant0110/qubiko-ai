@@ -39,9 +39,6 @@ class ShareIntentService {
   }
 
   void _handleSharedFiles(List<SharedMediaFile> files) {
-    // Silently ignore if no files were actually shared
-    // (this prevents false positives when the app returns from background,
-    // e.g. after the Instagram OAuth browser session closes)
     if (files.isEmpty) {
       ReceiveSharingIntent.instance.reset();
       return;
@@ -51,14 +48,25 @@ class ShareIntentService {
         .map((f) => f.path.trim())
         .firstWhere((p) => p.isNotEmpty, orElse: () => '');
 
-    // No real text content — could be a non-text share or a spurious trigger
     if (text.isEmpty) {
       ReceiveSharingIntent.instance.reset();
       return;
     }
 
-    // Only show "invalid link" snackbar when user actually shared something
-    // that is not an Instagram URL
+    // Only handle web URLs (http/https). Silently ignore our own deep-link
+    // scheme (qubikoai://) which leaks in when the OAuth browser redirects
+    // back to the app — we don't want that to trigger the "invalid link" toast.
+    Uri? uri;
+    try {
+      uri = Uri.parse(text);
+    } catch (_) {}
+
+    final scheme = uri?.scheme.toLowerCase() ?? '';
+    if (scheme != 'http' && scheme != 'https') {
+      ReceiveSharingIntent.instance.reset();
+      return;
+    }
+
     if (_isInstagramUrl(text)) {
       _controller.add(text);
     } else {
