@@ -31,6 +31,11 @@ class AuthResult {
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  // Web client ID (client_type: 3) from google-services.json
+  static const _webClientId =
+      '139829389575-5phdig51bpfj0dbhrtrsjesihnh1jtj6.apps.googleusercontent.com';
+
   GoogleSignIn get _googleSignIn => GoogleSignIn.instance;
 
   // Stream of authentication state changes
@@ -53,36 +58,27 @@ class AuthService {
   // Sign in with Google
   Future<AuthResult> signInWithGoogle() async {
     try {
-      // Initialize Google Sign-In if needed
-      await _googleSignIn.initialize();
+      // Pass the web client ID so Android CredentialManager can negotiate
+      // an idToken/auth-code with Google's servers properly.
+      await _googleSignIn.initialize(serverClientId: _webClientId);
 
-      // Start the sign-in process using authenticate() instead of signIn()
-      final GoogleSignInAccount? googleUser = await _googleSignIn
-          .authenticate();
+      final googleUser = await _googleSignIn.authenticate();
+      // In v7, authenticate() is non-nullable — cancellation throws
+      // GoogleSignInException.canceled which is caught below.
 
-      if (googleUser == null) {
-        // User cancelled the sign-in flow
-        return AuthResult.unauthenticated();
-      }
+      final googleAuth = googleUser.authentication;
 
-      // Obtain the auth details from the request
-      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
+      // accessToken lives on authorizationClient in v7
+      final authz = await googleUser.authorizationClient
+          .authorizationForScopes(['email', 'profile']);
 
-      // Get access token from authorization client for Firebase
-      final authz = await googleUser.authorizationClient.authorizationForScopes(
-        ['openid', 'email', 'profile'],
-      );
-
-      // Create a new credential
       final credential = GoogleAuthProvider.credential(
         accessToken: authz?.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      // Sign in to Firebase with the Google credential
-      final UserCredential userCredential = await _auth.signInWithCredential(
-        credential,
-      );
+      final UserCredential userCredential =
+          await _auth.signInWithCredential(credential);
       final User? user = userCredential.user;
 
       if (user != null) {
@@ -90,9 +86,15 @@ class AuthService {
       } else {
         return AuthResult.error('Failed to sign in with Google');
       }
+    } on GoogleSignInException catch (e) {
+      debugPrint('Google Sign-In error: $e');
+      if (e.code == GoogleSignInExceptionCode.canceled) {
+        return AuthResult.unauthenticated();
+      }
+      return AuthResult.error('Google Sign-In failed. Please try again.');
     } catch (e) {
       debugPrint('Error signing in with Google: $e');
-      return AuthResult.error(e.toString());
+      return AuthResult.error('An unexpected error occurred. Please try again.');
     }
   }
 

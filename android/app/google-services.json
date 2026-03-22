@@ -8,11 +8,19 @@
     {
       "client_info": {
         "mobilesdk_app_id": "1:139829389575:android:3bd2ea1a956d8d40e83da2",
-        "android_client_info": {
+      "android_client_info": {
           "package_name": "com.example.qubiko_ai"
         }
       },
       "oauth_client": [
+        {
+          "client_id": "139829389575-5kmvo1sp0arppl8a327qgajqpc2pbo2u.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.qubiko_ai",
+            "certificate_hash": "69e0a19efadf037f8ac2139e386f2ec272812a52"
+          }
+        },
         {
           "client_id": "139829389575-llphmf238mcdb7avl3jb6ukjtjgcvdsf.apps.googleusercontent.com",
           "client_type": 1,

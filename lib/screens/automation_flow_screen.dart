@@ -122,12 +122,7 @@ class _AutomationFlowScreenState extends ConsumerState<AutomationFlowScreen> {
   }
 
   void _handleBackPressed() {
-    final currentAutomation = ref.read(currentAutomationProvider);
-    if (currentAutomation != null && currentAutomation.currentStep > 0) {
-      ref.read(currentAutomationProvider.notifier).previousStep();
-    } else {
-      Navigator.of(context).pop();
-    }
+    Navigator.of(context).pop();
   }
 
   Future<void> _saveDraft() async {
@@ -455,6 +450,15 @@ class _AutomationFlowScreenState extends ConsumerState<AutomationFlowScreen> {
   }
 
   List<Widget> _buildLastStepButtons() {
+    final automation = ref.watch(currentAutomationProvider);
+    final isUpdate = automation?.status == AutomationStatus.active;
+    final label = _isPublishing
+        ? (isUpdate ? 'Updating...' : 'Publishing...')
+        : (isUpdate ? 'Publish Changes' : 'Publish');
+    final icon = isUpdate
+        ? Icons.update_rounded
+        : Icons.rocket_launch_rounded;
+
     return [
       Expanded(
         child: ElevatedButton.icon(
@@ -466,9 +470,9 @@ class _AutomationFlowScreenState extends ConsumerState<AutomationFlowScreen> {
                   child: CircularProgressIndicator(
                       strokeWidth: 2, color: Colors.white),
                 )
-              : const Icon(Icons.rocket_launch_rounded, size: 18),
+              : Icon(icon, size: 18),
           label: Text(
-            _isPublishing ? 'Publishing...' : 'Publish',
+            label,
             style: GoogleFonts.urbanist(
                 fontSize: 15, fontWeight: FontWeight.w600),
           ),
