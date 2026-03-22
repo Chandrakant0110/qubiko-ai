@@ -1,6 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/app_colors.dart';
 import '../constants/api_constants.dart';
 import '../providers/automation_providers.dart';
@@ -12,6 +15,8 @@ import '../widgets/automation/post_selection_grid.dart';
 import '../widgets/automation/keyword_setup_widget.dart';
 import '../widgets/automation/enhanced_dm_message_widget.dart';
 import '../widgets/automation/opening_message_widget.dart';
+import '../widgets/automation/conditions_widget.dart';
+import '../widgets/automation/review_widget.dart';
 
 /// Screen for managing the automation creation/editing flow
 /// This handles the step-by-step process of building automations
@@ -26,10 +31,11 @@ class AutomationFlowScreen extends ConsumerStatefulWidget {
 }
 
 class _AutomationFlowScreenState extends ConsumerState<AutomationFlowScreen> {
+  bool _isPublishing = false;
+
   @override
   void initState() {
     super.initState();
-    // Load Instagram posts when entering the screen
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(instagramPostsProvider.notifier).fetchPosts();
     });
@@ -337,16 +343,12 @@ class _AutomationFlowScreenState extends ConsumerState<AutomationFlowScreen> {
   }
 
   void _onPostSelected(String? postId) {
-    if (postId != null) {
-      try {
-        ref.read(automationOperationsProvider).selectPost(postId);
-        _showSuccessMessage('Post selected successfully');
-      } catch (e) {
-        _showErrorMessage('Failed to select post');
-      }
+    final notifier = ref.read(currentAutomationProvider.notifier);
+    if (postId != null && postId.isNotEmpty) {
+      notifier.selectPost(postId);
+      _showSuccessMessage('Post selected ✓');
     } else {
-      // Deselect post
-      ref.read(currentAutomationProvider.notifier).selectPost('');
+      notifier.selectPost('');
     }
   }
 
@@ -363,28 +365,25 @@ class _AutomationFlowScreenState extends ConsumerState<AutomationFlowScreen> {
   }
 
   Widget _buildSetConditionsStep() {
-    return const Center(
-      child: Text('Set Conditions Step - Coming Soon'),
-    );
+    return const ConditionsWidget();
   }
 
   Widget _buildReviewStep() {
-    return const Center(
-      child: Text('Review Step - Coming Soon'),
-    );
+    return const ReviewWidget();
   }
 
   Widget _buildBottomNavigation(Automation automation) {
     final canGoNext = ref.watch(canProceedToNextStepProvider);
-    final isLastStep = automation.currentStep >= AutomationConstants.totalSteps - 1;
-    
+    final isLastStep =
+        automation.currentStep >= AutomationConstants.totalSteps - 1;
+
     return Container(
       padding: const EdgeInsets.all(UIConstants.paddingLarge),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             blurRadius: 4,
             offset: const Offset(0, -2),
           ),
@@ -392,14 +391,18 @@ class _AutomationFlowScreenState extends ConsumerState<AutomationFlowScreen> {
       ),
       child: Row(
         children: [
+          // Previous button (all steps except first)
           if (automation.currentStep > 0)
             Expanded(
               child: TextButton(
-                onPressed: () => ref.read(currentAutomationProvider.notifier).previousStep(),
+                onPressed: () =>
+                    ref.read(currentAutomationProvider.notifier).previousStep(),
                 style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: UIConstants.paddingMedium),
+                  padding: const EdgeInsets.symmetric(
+                      vertical: UIConstants.paddingMedium),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(UIConstants.borderRadiusMedium),
+                    borderRadius:
+                        BorderRadius.circular(UIConstants.borderRadiusMedium),
                     side: BorderSide(color: Colors.grey[300]!),
                   ),
                 ),
@@ -413,50 +416,155 @@ class _AutomationFlowScreenState extends ConsumerState<AutomationFlowScreen> {
                 ),
               ),
             ),
-          if (automation.currentStep > 0) const SizedBox(width: UIConstants.paddingMedium),
-          Expanded(
-            child: ElevatedButton(
-              onPressed: canGoNext ? () => _handleNextPressed(isLastStep) : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryLightBlue,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: UIConstants.paddingMedium),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(UIConstants.borderRadiusMedium),
+          if (automation.currentStep > 0)
+            const SizedBox(width: UIConstants.paddingMedium),
+
+          // Last step: Save Draft + Publish side-by-side
+          if (isLastStep) ...
+            _buildLastStepButtons()
+          else
+            // Normal steps: single Next button
+            Expanded(
+              child: ElevatedButton(
+                onPressed: canGoNext
+                    ? () => _handleNextPressed(isLastStep)
+                    : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryLightBlue,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                      vertical: UIConstants.paddingMedium),
+                  shape: RoundedRectangleBorder(
+                    borderRadius:
+                        BorderRadius.circular(UIConstants.borderRadiusMedium),
+                  ),
+                  elevation: 0,
                 ),
-                elevation: 0,
-              ),
-              child: Text(
-                isLastStep ? 'Save Automation' : 'Next',
-                style: GoogleFonts.urbanist(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+                child: Text(
+                  'Next',
+                  style: GoogleFonts.urbanist(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );
   }
 
+  List<Widget> _buildLastStepButtons() {
+    return [
+      Expanded(
+        child: ElevatedButton.icon(
+          onPressed: _isPublishing ? null : _publishAutomation,
+          icon: _isPublishing
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white),
+                )
+              : const Icon(Icons.rocket_launch_rounded, size: 18),
+          label: Text(
+            _isPublishing ? 'Publishing...' : 'Publish',
+            style: GoogleFonts.urbanist(
+                fontSize: 15, fontWeight: FontWeight.w600),
+          ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.successGreen,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(
+                vertical: UIConstants.paddingMedium),
+            shape: RoundedRectangleBorder(
+              borderRadius:
+                  BorderRadius.circular(UIConstants.borderRadiusMedium),
+            ),
+            elevation: 0,
+          ),
+        ),
+      ),
+    ];
+  }
+
   Future<void> _handleNextPressed(bool isLastStep) async {
-    if (isLastStep) {
-      await _saveAutomation();
-    } else {
+    if (!isLastStep) {
       ref.read(currentAutomationProvider.notifier).nextStep();
     }
   }
 
-  Future<void> _saveAutomation() async {
+  Future<void> _publishAutomation() async {
+    final automation = ref.read(currentAutomationProvider);
+    if (automation == null) return;
+
+    setState(() => _isPublishing = true);
+
     try {
-      await ref.read(currentAutomationProvider.notifier).saveAutomation();
-      if (mounted) {
-        _showSuccessMessage('Automation saved successfully!');
-        Navigator.of(context).pop();
+      // ── 1. Retrieve the stored Instagram access token ──────────────────────
+      final prefs = await SharedPreferences.getInstance();
+      final accessToken = prefs.getString('primary_token') ?? '';
+
+      // ── 2. Build the payload ───────────────────────────────────────────────
+      final payload = {
+        'automation_id': automation.id,
+        'automation_name': automation.name,
+        // Step 1 — Post
+        'selected_post_id': automation.selectedPostId,
+        // Step 2 — Keywords
+        'any_keyword': automation.anyKeyword,
+        'trigger_keywords': automation.triggerKeywords,
+        // Step 3 — DM
+        'dm_message': automation.dmMessage,
+        'dm_buttons': automation.dmButtons.map((b) => b.toJson()).toList(),
+        // Step 4 — Opening message
+        'opening_message_enabled': automation.openingMessageEnabled,
+        'opening_message':
+            automation.openingMessageEnabled ? automation.openingMessage : null,
+        'opening_button_text': automation.openingMessageEnabled
+            ? automation.openingButtonText
+            : null,
+        // Step 5 — Conditions
+        'only_followers': automation.onlyFollowers,
+        // Auth
+        'access_token': accessToken,
+      };
+
+      // ── 3. POST to webhook ─────────────────────────────────────────────────
+      final response = await http
+          .post(
+            Uri.parse(
+                'https://chandrakant-s4-n8n-duplicate.hf.space/webhook/create-automation'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(payload),
+          )
+          .timeout(const Duration(seconds: 30));
+
+      if (!mounted) return;
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        // ── 4. Persist locally as active ──────────────────────────────────────
+        await ref.read(currentAutomationProvider.notifier).saveAutomation();
+        ref.invalidate(automationProvider);
+        if (mounted) {
+          _showSuccessMessage('Automation published! 🚀');
+          Navigator.of(context).pop();
+        }
+      } else {
+        _showErrorMessage(
+            'Server error (${response.statusCode}). Please try again.');
       }
-    } catch (e) {
-      _showErrorMessage('Failed to save automation');
+    } on Exception catch (e) {
+      if (!mounted) return;
+      final isNetwork = e.toString().contains('SocketException') ||
+          e.toString().contains('TimeoutException');
+      _showErrorMessage(
+        isNetwork
+            ? 'No internet connection. Check your network and try again.'
+            : 'Failed to publish. Please try again.',
+      );
+    } finally {
+      if (mounted) setState(() => _isPublishing = false);
     }
   }
 

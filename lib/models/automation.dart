@@ -1,4 +1,5 @@
-/// Enum representing the current status of an automation
+import 'package:flutter/foundation.dart' show listEquals, mapEquals;
+
 enum AutomationStatus {
   draft,
   active,
@@ -62,8 +63,12 @@ class Automation {
   final List<DMButton> dmButtons;
   
   // Step 4: Opening message
+  final bool openingMessageEnabled;
   final String? openingMessage;
   final String? openingButtonText;
+
+  // Step 5: Conditions
+  final bool onlyFollowers;
 
   const Automation({
     required this.id,
@@ -80,8 +85,10 @@ class Automation {
     this.triggerKeywords = const [],
     this.dmMessage,
     this.dmButtons = const [],
+    this.openingMessageEnabled = false,
     this.openingMessage,
     this.openingButtonText,
+    this.onlyFollowers = false,
   });
 
   /// Factory constructor to create a new automation
@@ -124,8 +131,10 @@ class Automation {
       triggerKeywords: List<String>.from(json['trigger_keywords'] ?? []),
       dmMessage: json['dm_message'] as String?,
       dmButtons: (json['dm_buttons'] as List?)?.map((item) => DMButton.fromJson(item)).toList() ?? [],
+      openingMessageEnabled: json['opening_message_enabled'] as bool? ?? false,
       openingMessage: json['opening_message'] as String?,
       openingButtonText: json['opening_button_text'] as String?,
+      onlyFollowers: json['only_followers'] as bool? ?? false,
     );
   }
 
@@ -146,8 +155,10 @@ class Automation {
       'trigger_keywords': triggerKeywords,
       'dm_message': dmMessage,
       'dm_buttons': dmButtons.map((button) => button.toJson()).toList(),
+      'opening_message_enabled': openingMessageEnabled,
       'opening_message': openingMessage,
       'opening_button_text': openingButtonText,
+      'only_followers': onlyFollowers,
     };
   }
 
@@ -167,8 +178,10 @@ class Automation {
     List<String>? triggerKeywords,
     String? dmMessage,
     List<DMButton>? dmButtons,
+    bool? openingMessageEnabled,
     String? openingMessage,
     String? openingButtonText,
+    bool? onlyFollowers,
   }) {
     return Automation(
       id: id ?? this.id,
@@ -185,8 +198,10 @@ class Automation {
       triggerKeywords: triggerKeywords ?? List<String>.from(this.triggerKeywords),
       dmMessage: dmMessage ?? this.dmMessage,
       dmButtons: dmButtons ?? List<DMButton>.from(this.dmButtons),
+      openingMessageEnabled: openingMessageEnabled ?? this.openingMessageEnabled,
       openingMessage: openingMessage ?? this.openingMessage,
       openingButtonText: openingButtonText ?? this.openingButtonText,
+      onlyFollowers: onlyFollowers ?? this.onlyFollowers,
     );
   }
 
@@ -244,14 +259,15 @@ class Automation {
                dmMessage!.length <= 600 &&
                dmButtons.isNotEmpty &&
                dmButtons.every((button) => button.isValid);
-      case 3: // Opening Message step
-        return openingMessage != null && 
-               openingMessage!.trim().isNotEmpty && 
+      case 3: // Opening Message step — optional, always allow Next when toggle is off
+        if (!openingMessageEnabled) return true;
+        return openingMessage != null &&
+               openingMessage!.trim().isNotEmpty &&
                openingMessage!.length <= 600 &&
-               openingButtonText != null && 
+               openingButtonText != null &&
                openingButtonText!.trim().isNotEmpty;
-      case 4: // Set Conditions step
-        return configuration.containsKey('conditions');
+      case 4: // Set Conditions step — always optional
+        return true;
       case 5: // Review step
         return true;
       default:
@@ -281,14 +297,47 @@ class Automation {
     return 'automation_${DateTime.now().millisecondsSinceEpoch}_${(DateTime.now().microsecond % 1000).toString().padLeft(3, '0')}';
   }
 
+  /// Value equality — compares every field so Riverpod detects all state changes.
+  /// (Without this, `Notifier<Automation?>` would see old == new on every copyWith
+  /// and skip listener notifications entirely.)
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is Automation && other.id == id;
+    return other is Automation &&
+        other.id == id &&
+        other.name == name &&
+        other.description == description &&
+        other.status == status &&
+        other.selectedPostId == selectedPostId &&
+        other.currentStep == currentStep &&
+        other.anyKeyword == anyKeyword &&
+        listEquals(other.triggerKeywords, triggerKeywords) &&
+        other.dmMessage == dmMessage &&
+        listEquals(other.dmButtons, dmButtons) &&
+        other.openingMessageEnabled == openingMessageEnabled &&
+        other.openingMessage == openingMessage &&
+        other.openingButtonText == openingButtonText &&
+        other.onlyFollowers == onlyFollowers &&
+        mapEquals(other.configuration, configuration);
   }
 
   @override
-  int get hashCode => id.hashCode;
+  int get hashCode => Object.hash(
+        id,
+        name,
+        description,
+        status,
+        selectedPostId,
+        currentStep,
+        anyKeyword,
+        Object.hashAll(triggerKeywords),
+        dmMessage,
+        Object.hashAll(dmButtons),
+        openingMessageEnabled,
+        openingMessage,
+        openingButtonText,
+        onlyFollowers,
+      );
 
   @override
   String toString() {

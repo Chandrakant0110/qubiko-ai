@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart' show debugPrint;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/automation.dart';
@@ -283,6 +284,22 @@ class CurrentAutomationNotifier extends Notifier<Automation?> {
     }
   }
 
+  /// Enables or disables the opening message step
+  void setOpeningMessageEnabled(bool enabled) {
+    if (state != null) {
+      state = state!.copyWith(openingMessageEnabled: enabled);
+      _saveDraft();
+    }
+  }
+
+  /// Sets the "only respond to followers" condition
+  void setOnlyFollowers(bool value) {
+    if (state != null) {
+      state = state!.copyWith(onlyFollowers: value);
+      _saveDraft();
+    }
+  }
+
   /// Updates opening message data
   void updateOpeningMessage({String? message, String? buttonText}) {
     if (state != null) {
@@ -294,27 +311,42 @@ class CurrentAutomationNotifier extends Notifier<Automation?> {
     }
   }
 
-  /// Saves the current automation as a draft
+  /// Saves the WIP state as a draft (called automatically on every change)
   Future<void> _saveDraft() async {
     if (state != null) {
       try {
         final repository = ref.read(automationRepositoryProvider);
         await repository.saveDraft(state!);
       } catch (e) {
-        // Log error but don't interrupt the flow
-        print('Warning: Failed to save draft: $e');
+        debugPrint('Warning: Failed to auto-save draft: $e');
       }
     }
   }
 
-  /// Saves the automation and completes the flow
+  /// Explicitly saves the automation as a named draft visible in the list.
+  Future<void> saveAsDraft() async {
+    if (state != null) {
+      try {
+        final repository = ref.read(automationRepositoryProvider);
+        final draft = state!.withStatus(AutomationStatus.draft);
+        await repository.saveAutomation(draft); // promote to main list
+        await repository.clearDrafts();          // remove WIP copy
+        state = null;
+      } catch (e) {
+        throw StorageException.saveFailed();
+      }
+    }
+  }
+
+  /// Publishes the automation (marks active, saves to main list)
   Future<void> saveAutomation() async {
     if (state != null) {
       try {
         final repository = ref.read(automationRepositoryProvider);
         final finalAutomation = state!.withStatus(AutomationStatus.active);
         await repository.saveAutomation(finalAutomation);
-        state = null; // Clear current automation
+        await repository.clearDrafts(); // clean up WIP draft
+        state = null;
       } catch (error) {
         throw StorageException.saveFailed();
       }

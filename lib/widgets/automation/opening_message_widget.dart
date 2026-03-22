@@ -17,19 +17,16 @@ class OpeningMessageWidget extends ConsumerStatefulWidget {
 class _OpeningMessageWidgetState extends ConsumerState<OpeningMessageWidget> {
   final TextEditingController _messageController = TextEditingController();
   final TextEditingController _buttonTextController = TextEditingController();
-  
-  bool _isToggleEnabled = false;
 
   @override
   void initState() {
     super.initState();
-    // Initialize controllers with existing data
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final currentAutomation = ref.read(currentAutomationProvider);
-      if (currentAutomation != null) {
-        _messageController.text = currentAutomation.openingMessage ?? '';
-        _buttonTextController.text = currentAutomation.openingButtonText ?? 'Send me the link';
-        _isToggleEnabled = currentAutomation.openingMessage?.isNotEmpty == true;
+      final current = ref.read(currentAutomationProvider);
+      if (current != null) {
+        _messageController.text = current.openingMessage ?? '';
+        _buttonTextController.text =
+            current.openingButtonText ?? 'Send me the link';
       }
     });
   }
@@ -44,25 +41,24 @@ class _OpeningMessageWidgetState extends ConsumerState<OpeningMessageWidget> {
   @override
   Widget build(BuildContext context) {
     final currentAutomation = ref.watch(currentAutomationProvider);
-    
     if (currentAutomation == null) {
       return const Center(child: Text('No automation data'));
     }
+    // Use provider as source of truth for toggle state
+    final isEnabled = currentAutomation.openingMessageEnabled;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(UIConstants.paddingLarge),
       child: GestureDetector(
-        onTap: () {
-          FocusScope.of(context).unfocus();
-        },
+        onTap: () => FocusScope.of(context).unfocus(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildHeader(),
             const SizedBox(height: UIConstants.paddingLarge),
-            _buildToggleSection(),
+            _buildToggleSection(isEnabled),
             const SizedBox(height: UIConstants.paddingLarge),
-            if (_isToggleEnabled) ...[
+            if (isEnabled) ...[
               _buildMessageCard(),
               const SizedBox(height: UIConstants.paddingLarge),
               _buildButtonTextSection(),
@@ -102,17 +98,17 @@ class _OpeningMessageWidgetState extends ConsumerState<OpeningMessageWidget> {
     );
   }
 
-  Widget _buildToggleSection() {
+  Widget _buildToggleSection(bool isEnabled) {
     return Container(
       padding: const EdgeInsets.all(UIConstants.paddingLarge),
       decoration: BoxDecoration(
-        color: _isToggleEnabled 
-            ? AppColors.primaryLightBlue.withOpacity(0.1)
+        color: isEnabled
+            ? AppColors.primaryLightBlue.withValues(alpha: 0.1)
             : Colors.grey[50],
         borderRadius: BorderRadius.circular(UIConstants.borderRadiusMedium),
         border: Border.all(
-          color: _isToggleEnabled 
-              ? AppColors.primaryLightBlue.withOpacity(0.3)
+          color: isEnabled
+              ? AppColors.primaryLightBlue.withValues(alpha: 0.3)
               : Colors.grey[300]!,
           width: 1.5,
         ),
@@ -123,16 +119,14 @@ class _OpeningMessageWidgetState extends ConsumerState<OpeningMessageWidget> {
             width: UIConstants.iconSizeXLarge,
             height: UIConstants.iconSizeXLarge,
             decoration: BoxDecoration(
-              color: _isToggleEnabled 
-                  ? AppColors.primaryLightBlue.withOpacity(0.2)
+              color: isEnabled
+                  ? AppColors.primaryLightBlue.withValues(alpha: 0.2)
                   : Colors.grey[200],
               borderRadius: BorderRadius.circular(UIConstants.iconSizeXLarge / 2),
             ),
             child: Icon(
               Icons.message_outlined,
-              color: _isToggleEnabled 
-                  ? AppColors.primaryLightBlue
-                  : Colors.grey[600],
+              color: isEnabled ? AppColors.primaryLightBlue : Colors.grey[600],
               size: UIConstants.iconSizeMedium,
             ),
           ),
@@ -151,7 +145,9 @@ class _OpeningMessageWidgetState extends ConsumerState<OpeningMessageWidget> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Send an initial message to start the conversation',
+                  isEnabled
+                      ? 'Send an initial message to start the conversation'
+                      : 'Tap to enable an opening message (optional)',
                   style: GoogleFonts.urbanist(
                     fontSize: 14,
                     color: Colors.grey[600],
@@ -163,24 +159,23 @@ class _OpeningMessageWidgetState extends ConsumerState<OpeningMessageWidget> {
           Transform.scale(
             scale: 1.2,
             child: Switch(
-              value: _isToggleEnabled,
+              value: isEnabled,
               onChanged: (value) {
-                setState(() {
-                  _isToggleEnabled = value;
-                });
+                // Drive state through provider — widget rebuilds reactively
+                ref
+                    .read(currentAutomationProvider.notifier)
+                    .setOpeningMessageEnabled(value);
                 if (!value) {
-                  // Clear message when disabled
                   _messageController.clear();
                   ref.read(currentAutomationProvider.notifier).updateOpeningMessage(
-                    message: '',
-                    buttonText: '',
-                  );
+                        message: '',
+                        buttonText: '',
+                      );
                 } else {
-                  // Set default button text when enabled
                   _buttonTextController.text = 'Send me the link';
                   ref.read(currentAutomationProvider.notifier).updateOpeningMessage(
-                    buttonText: 'Send me the link',
-                  );
+                        buttonText: 'Send me the link',
+                      );
                 }
               },
               activeColor: AppColors.primaryLightBlue,

@@ -76,10 +76,19 @@ class PostGridItem extends StatelessWidget {
           borderRadius: BorderRadius.circular(UIConstants.borderRadiusMedium),
           border: Border.all(
             color: isSelected
-                ? AppColors.successGreen
+                ? AppColors.primaryLightBlue
                 : Colors.grey[300]!,
             width: isSelected ? 3 : 1,
           ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.primaryLightBlue.withValues(alpha: 0.35),
+                    blurRadius: 8,
+                    spreadRadius: 1,
+                  )
+                ]
+              : null,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -130,6 +139,7 @@ class PostThumbnail extends StatelessWidget {
           topRight: Radius.circular(UIConstants.borderRadiusMedium),
         ),
         child: Stack(
+          fit: StackFit.expand,
           children: [
             // Main image
             Image.network(
@@ -145,7 +155,7 @@ class PostThumbnail extends StatelessWidget {
                 return const PostThumbnailLoading();
               },
             ),
-            
+
             // Video indicator
             if (post.isVideo)
               const Positioned(
@@ -153,14 +163,9 @@ class PostThumbnail extends StatelessWidget {
                 right: UIConstants.paddingSmall,
                 child: PostVideoIndicator(),
               ),
-            
-            // Selection indicator
-            if (isSelected)
-              const Positioned(
-                top: UIConstants.paddingSmall,
-                left: UIConstants.paddingSmall,
-                child: PostSelectionIndicator(),
-              ),
+
+            // Selection overlay — covers the full thumbnail
+            if (isSelected) const PostSelectionIndicator(),
           ],
         ),
       ),
@@ -189,23 +194,34 @@ class PostVideoIndicator extends StatelessWidget {
   }
 }
 
-/// Selection indicator overlay
+/// Full-cover selection overlay with centred checkmark
 class PostSelectionIndicator extends StatelessWidget {
   const PostSelectionIndicator({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 24,
-      height: 24,
-      decoration: BoxDecoration(
-        color: AppColors.successGreen,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: const Icon(
-        Icons.check,
-        color: Colors.white,
-        size: UIConstants.iconSizeSmall,
+      color: AppColors.primaryLightBlue.withValues(alpha: 0.45),
+      child: Center(
+        child: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: AppColors.primaryLightBlue,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.25),
+                blurRadius: 6,
+              )
+            ],
+          ),
+          child: const Icon(
+            Icons.check_rounded,
+            color: Colors.white,
+            size: 30,
+          ),
+        ),
       ),
     );
   }

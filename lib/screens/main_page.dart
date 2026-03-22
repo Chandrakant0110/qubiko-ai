@@ -74,7 +74,7 @@ class _MainPageState extends ConsumerState<MainPage> {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('primary_token');
     final expiresAt = prefs.getString('expires_at');
-
+    if (!mounted) return;
     setState(() {
       _primaryToken = token;
       _expiresAt = expiresAt;
@@ -91,7 +91,7 @@ class _MainPageState extends ConsumerState<MainPage> {
 
     await prefs.setString('primary_token', token);
     await prefs.setString('expires_at', expiresAt.toIso8601String());
-
+    if (!mounted) return;
     setState(() {
       _primaryToken = token;
       _expiresAt = expiresAt.toIso8601String();
@@ -100,14 +100,12 @@ class _MainPageState extends ConsumerState<MainPage> {
 
     _showToast('Instagram connected successfully!');
     HapticFeedback.mediumImpact();
-
-    // Fetch profile after saving token
     _fetchProfile();
   }
 
-  // --- Add this function ---
   Future<void> _fetchProfile() async {
     if (_primaryToken == null || _primaryToken!.isEmpty) return;
+    if (!mounted) return;
     setState(() {
       _loadingProfile = true;
       _profileError = null;
@@ -117,6 +115,7 @@ class _MainPageState extends ConsumerState<MainPage> {
     );
     try {
       final response = await http.get(url);
+      if (!mounted) return;
       if (response.statusCode == 200) {
         setState(() {
           _profileData = json.decode(response.body);
@@ -124,13 +123,14 @@ class _MainPageState extends ConsumerState<MainPage> {
         });
       } else {
         setState(() {
-          _profileError = 'Failed to fetch profile: ${response.body}';
+          _profileError = 'Failed to fetch profile. Please reconnect.';
           _loadingProfile = false;
         });
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
-        _profileError = 'Error: $e';
+        _profileError = 'Could not load profile. Check your connection.';
         _loadingProfile = false;
       });
     }
